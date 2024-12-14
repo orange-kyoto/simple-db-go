@@ -10,8 +10,8 @@ type BlockID struct {
 	Blknum   int
 }
 
-func NewBlockID(filename string, blknum int) BlockID {
-	return BlockID{Filename: filename, Blknum: blknum}
+func NewBlockID(filename string, blknum int) *BlockID {
+	return &BlockID{Filename: filename, Blknum: blknum}
 }
 
 func (b BlockID) Equals(other BlockID) bool {
