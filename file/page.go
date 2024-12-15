@@ -2,12 +2,13 @@ package file
 
 import (
 	"encoding/binary"
-	"errors"
 )
 
 const (
 	// 32-bit 整数のバイトサイズ
 	Int32ByteSize = 4
+	// ASCII文字のバイト数
+	CharByteSize = 1
 )
 
 type Page struct {
@@ -22,44 +23,38 @@ func NewPageFrom(b []byte) *Page {
 	return &Page{data: b}
 }
 
-func (p *Page) GetInt(offset int) (int32, error) {
-	if err := p.checkBounds(offset, Int32ByteSize); err != nil {
-		return 0, err
-	}
-
-	return int32(binary.LittleEndian.Uint32(p.data[offset:])), nil
+func (p *Page) GetInt(offset int) int32 {
+	return int32(binary.LittleEndian.Uint32(p.data[offset:]))
 }
 
-func (p *Page) GetBytes(offset int, length int) ([]byte, error) {
-	if err := p.checkBounds(offset, length); err != nil {
-		return nil, err
-	}
+func (p *Page) GetBytes(offset int) []byte {
+	length := p.GetInt(offset)
+	blobOffset := offset + Int32ByteSize
 
-	return p.data[offset : offset+length], nil
+	return p.data[blobOffset : blobOffset+int(length)]
 }
 
-func (p *Page) SetInt(offset int, newData int32) error {
-	if err := p.checkBounds(offset, Int32ByteSize); err != nil {
-		return err
-	}
-
+func (p *Page) SetInt(offset int, newData int32) {
 	binary.LittleEndian.PutUint32(p.data[offset:], uint32(newData))
-	return nil
 }
 
-func (p *Page) SetBytes(offset int, newData []byte) error {
-	if err := p.checkBounds(offset, len(newData)); err != nil {
-		return err
-	}
-
-	copy(p.data[offset:], newData)
-	return nil
+func (p *Page) SetBytes(offset int, newData []byte) {
+	p.SetInt(offset, int32(len(newData)))
+	blobOffset := offset + Int32ByteSize
+	copy(p.data[blobOffset:], newData)
 }
 
-func (p *Page) checkBounds(offset int, length int) error {
-	if offset < 0 || offset+length > len(p.data) {
-		return errors.New("offset out of bounds")
-	}
+func (p *Page) GetString(offset int) string {
+	b := p.GetBytes(offset)
+	// 暗黙的にASCII文字列として扱う
+	return string(b)
+}
 
-	return nil
+func (p *Page) SetString(offset int, newData string) {
+	bb := []byte(newData)
+	p.SetBytes(offset, bb)
+}
+
+func MaxLength(strlen int) int {
+	return Int32ByteSize + strlen*CharByteSize
 }

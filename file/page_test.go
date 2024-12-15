@@ -5,26 +5,29 @@ import "testing"
 func TestPage(t *testing.T) {
 	page := NewPage(4096)
 
-	err := page.SetInt(4, 12345)
+	page.SetInt(4, 12345)
 
-	value, err := page.GetInt(4)
-	if err != nil || value != 12345 {
-		t.Errorf("Expected %d, got %d, error: %v", 12345, value, err)
+	value := page.GetInt(4)
+	if value != 12345 {
+		t.Errorf("Expected %d, got %d", 12345, value)
 	}
 
-	err = page.SetBytes(8, []byte("test"))
-	if err != nil {
-		t.Errorf("Failed to SetBytes: %v", err)
+	page.SetBytes(8, []byte("test"))
+
+	bytes := page.GetBytes(8)
+	if string(bytes) != "test" {
+		t.Errorf("Expected 'test', got '%s'", string(bytes))
 	}
 
-	bytes, err := page.GetBytes(8, 4)
-	if err != nil || string(bytes) != "test" {
-		t.Errorf("Expected 'test', got '%s', error: %v", string(bytes), err)
+	page.SetInt(12, -98765)
+	value = page.GetInt(12)
+	if value != -98765 {
+		t.Errorf("Expected %d, got %d", -98765, value)
 	}
 
-	err = page.SetInt(12, -98765)
-	value, err = page.GetInt(12)
-	if err != nil || value != -98765 {
-		t.Errorf("Expected %d, got %d, error: %v", -98765, value, err)
+	page.SetString(16, "hello world!")
+	s := page.GetString(16)
+	if s != "hello world!" {
+		t.Errorf("Expected 'hello world!', got '%s'", s)
 	}
 }
