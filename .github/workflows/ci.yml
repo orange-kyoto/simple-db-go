@@ -1,0 +1,46 @@
+name: CI Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Go version
+        run: |
+          # go x.y.z という行にバージョンが書いてある想定
+          GO_VERSION=$(awk '/^go / {print $2}' go.mod)
+          echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Checkout formatting
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ Code formatting issues found! Run 'gofmt -w .' to fix them."
+            exit 1
+          else
+            echo "✅ Code is properly formatted."
+          fi
+
+      - name: Install dependencies
+        run: |
+          go mod tidy
+          go mod verify
+
+      - name: Run tests
+        run: go test ./... -v
