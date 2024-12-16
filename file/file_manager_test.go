@@ -23,7 +23,6 @@ func createTempFiles() {
 }
 
 func TestDbDirectoryExists(t *testing.T) {
-	t.Skip("test1")
 	cleanTestDir()
 	defer cleanTestDir()
 
@@ -40,7 +39,6 @@ func TestDbDirectoryExists(t *testing.T) {
 }
 
 func TestTempFilesCleaned(t *testing.T) {
-	t.Skip("test2")
 	cleanTestDir()
 	defer cleanTestDir()
 
@@ -61,7 +59,6 @@ func TestTempFilesCleaned(t *testing.T) {
 }
 
 func TestReadWrite(t *testing.T) {
-	t.Skip("test3")
 	cleanTestDir()
 	defer cleanTestDir()
 

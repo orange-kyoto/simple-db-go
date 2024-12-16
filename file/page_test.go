@@ -14,6 +14,13 @@ func TestPage(t *testing.T) {
 
 	page.SetBytes(8, []byte("test"))
 
+	// page に書き込まれたバイト列に先立って、バイト列の大きさが書き込まれていること.
+	value = page.GetInt(8)
+	if int(value) != len([]byte("test")) {
+		t.Errorf("Expected %d, got %d", len([]byte("test")), value)
+	}
+
+	// page に書き込まれたバイト列の内容が正しいこと.
 	bytes := page.GetBytes(8)
 	if string(bytes) != "test" {
 		t.Errorf("Expected 'test', got '%s'", string(bytes))
