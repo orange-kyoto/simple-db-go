@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+const fileFlag = os.O_RDWR | os.O_CREATE | os.O_SYNC
+
 type FileRequest interface {
 	// 操作の対象となるファイル名を返す
 	getFileName(fm *FileManager) string
@@ -31,7 +33,6 @@ func (rfr *ReadFileRequest) getFileName(fm *FileManager) string {
 }
 
 func (rfr *ReadFileRequest) openFile(fm *FileManager) (*os.File, error) {
-	fileFlag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	return os.OpenFile(rfr.getFileName(fm), fileFlag, 0644)
 }
 
@@ -66,7 +67,6 @@ func (wfr *WriteFileRequest) resolve(f *os.File, fm *FileManager) {
 }
 
 func (wfr *WriteFileRequest) openFile(fm *FileManager) (*os.File, error) {
-	fileFlag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	return os.OpenFile(wfr.getFileName(fm), fileFlag, 0644)
 }
 
@@ -85,7 +85,6 @@ func (afr *AppendFileRequest) getFileName(fm *FileManager) string {
 }
 
 func (afr *AppendFileRequest) openFile(fm *FileManager) (*os.File, error) {
-	fileFlag := os.O_RDWR | os.O_CREATE | os.O_SYNC
 	return os.OpenFile(afr.getFileName(fm), fileFlag, 0644)
 }
 
