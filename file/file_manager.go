@@ -120,6 +120,37 @@ func (afr *AppendFileRequest) handleError(err error) {
 	afr.replyChan <- nil
 }
 
+type GetBlockLength struct {
+	fileName  string
+	replyChan chan int64
+	errorChan chan error
+}
+
+func (gbl *GetBlockLength) getFileName(fm *FileManager) string {
+	return filepath.Join(fm.dbDirectoryPath, gbl.fileName)
+}
+
+func (gbl *GetBlockLength) openFile(fm *FileManager) (*os.File, error) {
+	return os.OpenFile(gbl.getFileName(fm), fileFlag, 0644)
+}
+
+func (gbl *GetBlockLength) resolve(f *os.File, fm *FileManager) {
+	fileInfo, err := f.Stat()
+	if err != nil {
+		gbl.handleError(err)
+		return
+	} else {
+		gbl.errorChan <- nil
+		gbl.replyChan <- fileInfo.Size() / int64(fm.BlockSize())
+		return
+	}
+}
+
+func (gbl *GetBlockLength) handleError(err error) {
+	gbl.errorChan <- err
+	gbl.replyChan <- -1
+}
+
 type FileManager struct {
 	dbDirectoryPath string
 	files           map[string]*os.File
@@ -250,6 +281,20 @@ func (fm *FileManager) Append(fileName string) *BlockID {
 		panic(err)
 	}
 
+	return <-req.replyChan
+}
+
+func (fm *FileManager) GetBlockLength(fileName string) int64 {
+	req := &GetBlockLength{
+		fileName:  fileName,
+		replyChan: make(chan int64),
+		errorChan: make(chan error),
+	}
+	fm.requestChan <- req
+
+	if err := <-req.errorChan; err != nil {
+		panic(err)
+	}
 	return <-req.replyChan
 }
 

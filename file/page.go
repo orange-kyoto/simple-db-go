@@ -4,13 +4,6 @@ import (
 	"encoding/binary"
 )
 
-const (
-	// 32-bit 整数のバイトサイズ
-	Int32ByteSize = 4
-	// ASCII文字のバイト数
-	CharByteSize = 1
-)
-
 type Page struct {
 	Data []byte
 }
@@ -31,7 +24,10 @@ func (p *Page) GetBytes(offset int) []byte {
 	length := p.GetInt(offset)
 	blobOffset := offset + Int32ByteSize
 
-	return p.Data[blobOffset : blobOffset+int(length)]
+	data := make([]byte, length)
+	copy(data, p.Data[blobOffset:blobOffset+int(length)])
+
+	return data
 }
 
 func (p *Page) SetInt(offset int, newData int32) {
