@@ -1,0 +1,108 @@
+package transaction
+
+import (
+	"fmt"
+	"simple-db-go/file"
+	"simple-db-go/log"
+)
+
+type SetStringRecord struct {
+	transactionNumber TransactionNumber
+	offset            int32
+	// ログレコードに記録された、その操作における変更前の値
+	oldValue string
+	blockID  *file.BlockID
+}
+
+/*
+# SETSTRING レコードの構造
+
+```example
+<SETSTRING, 2, junk, 44, 20, hello, ciao>
+```
+
+* 1つ目：SETSTRING
+* 2つ目：トランザクション番号
+* 3つ目：書き込む対象のファイル名
+* 4つ目：書き込む対象のブロック番号
+* 5つ目：書き込む対象のオフセット
+* 6つ目：書き込む前の古い値
+* 7つ目：書き込む新しい値
+
+おそらく、今回の実装では undo-only をやるため、7つ目の新しい値は使わない.
+*/
+func NewSetStringRecord(page *file.Page) *SetStringRecord {
+	tpos := file.Int32ByteSize
+	txNum := TransactionNumber(page.GetInt(tpos))
+
+	fpos := tpos + file.Int32ByteSize
+	filename := page.GetString(fpos)
+
+	bpos := fpos + file.MaxLength(len(filename))
+	blockNumber := page.GetInt(bpos)
+	blockID := file.NewBlockID(filename, int(blockNumber))
+
+	opos := bpos + file.Int32ByteSize
+	offset := page.GetInt(opos)
+
+	vpos := opos + file.Int32ByteSize
+	oldValue := page.GetString(vpos)
+
+	return &SetStringRecord{
+		transactionNumber: txNum,
+		offset:            offset,
+		oldValue:          oldValue,
+		blockID:           blockID,
+	}
+}
+
+func (ssr *SetStringRecord) GetOperation() RecordOperator {
+	return SETSTRING
+}
+
+func (ssr *SetStringRecord) GetTransactionNumber() TransactionNumber {
+	return ssr.transactionNumber
+}
+
+func (ssr *SetStringRecord) Undo(t *Transaction) {
+	t.Pin(ssr.blockID)
+	// 注意：Undo のログは残さない！
+	t.SetString(ssr.blockID, ssr.offset, ssr.oldValue, false)
+	t.Unpin(ssr.blockID)
+}
+
+func (ssr *SetStringRecord) ToString() string {
+	return fmt.Sprintf(
+		"<SETSTRING %d %s %d %s>",
+		ssr.transactionNumber,
+		ssr.blockID.ToString(),
+		ssr.offset,
+		ssr.oldValue,
+	)
+}
+
+func WriteSetStringRecord(
+	logManager *log.LogManager,
+	transactionNumber TransactionNumber,
+	blockID *file.BlockID,
+	offset int32,
+	oldValue string
+) log.LSN {
+	tpos := file.Int32ByteSize
+	fpos := tpos + file.Int32ByteSize
+	bpos := fpos + file.MaxLength(len(blockID.Filename))
+	opos := bpos + file.Int32ByteSize
+	vpos := opos + file.Int32ByteSize
+	recordLength := vpos + file.MaxLength(len(oldValue))
+
+	rawLogRecord := make([]byte, 0, recordLength)
+	page := file.NewPageFrom(rawLogRecord)
+	page.SetInt(0, int32(SETSTRING))
+	page.SetInt(tpos, int32(transactionNumber))
+	page.SetString(fpos, blockID.Filename)
+	page.SetInt(bpos, int32(blockID.Blknum))
+	page.SetInt(opos, offset)
+	page.SetString(vpos, oldValue)
+
+	return logManager.Append(page.Data)
+}

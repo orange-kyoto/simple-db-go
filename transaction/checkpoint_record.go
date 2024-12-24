@@ -1,0 +1,47 @@
+package transaction
+
+import (
+	"simple-db-go/file"
+	"simple-db-go/log"
+)
+
+type CheckpointRecord struct{}
+
+/*
+# CHECKPOINT レコードの構造
+
+```example
+<CHECKPOINT>
+```
+
+- 他の情報はなし
+*/
+func NewCheckpointRecord() *CheckpointRecord {
+	return &CheckpointRecord{}
+}
+
+func (cr *CheckpointRecord) GetOperation() RecordOperator {
+	return CHECKPOINT
+}
+
+func (cr *CheckpointRecord) GetTransactionNumber() TransactionNumber {
+	return DummyTransactionNumber
+}
+
+func (cr *CheckpointRecord) Undo(t *Transaction) {
+	// することがないので何もしない
+}
+
+func (cr *CheckpointRecord) ToString() string {
+	return "<CHECKPOINT>"
+}
+
+func WriteCheckpointRecord(logManager *log.LogManager) log.LSN {
+	recordLength := file.Int32ByteSize
+	rawLogRecord := make([]byte, 0, recordLength)
+
+	page := file.NewPageFrom(rawLogRecord)
+	page.SetInt(0, int32(CHECKPOINT))
+
+	return logManager.Append(page.Data)
+}
