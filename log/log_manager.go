@@ -10,7 +10,7 @@ import (
 type LSN int
 
 // Log Record
-type LogRecord []byte
+type RawLogRecord []byte
 
 // Log Record 追加のリクエスト
 type AppendRequest struct {
@@ -93,7 +93,7 @@ func (lm *LogManager) Flush(lsn LSN) {
 	}
 }
 
-func (lm *LogManager) Append(logRecord LogRecord) LSN {
+func (lm *LogManager) Append(logRecord RawLogRecord) LSN {
 	req := &AppendRequest{
 		record:    logRecord,
 		replyChan: make(chan LSN),
@@ -113,7 +113,7 @@ func (lm *LogManager) Append(logRecord LogRecord) LSN {
 // 注意1: log record は右から左に追加していく. (iteratorが最も新しいログから読み取れるようにしているっぽい.じゃあGoではそれに倣う必要はないかも？)
 // 注意2: Log Page の先頭4バイト(boundary)は、直近で追加されたレコードのオフセット.
 // 注意3: LSN という連番を管理する都合上、排他制御が必要. 管理用の Goroutine で実行する.
-func (lm *LogManager) append(logRecord LogRecord) LSN {
+func (lm *LogManager) append(logRecord RawLogRecord) LSN {
 	var boundary int32
 	boundary = lm.logPage.GetInt(0)
 	recordSize := len(logRecord)
@@ -158,12 +158,12 @@ func (lm *LogManager) Close() {
 }
 
 // Log Iterator に相当する処理を関数で実装する
-func (lm *LogManager) StreamLogs(startBlockID *file.BlockID) <-chan LogRecord {
+func (lm *LogManager) StreamLogs(startBlockID *file.BlockID) <-chan RawLogRecord {
 	// ディスクに書き込まれていないログレコードを先に書き込んでおく.
 	// 以降の処理では基本的にディスクから読み込むことになる.
 	lm.flush()
 
-	logChan := make(chan LogRecord)
+	logChan := make(chan RawLogRecord)
 
 	// 初期化
 	blockID := startBlockID
