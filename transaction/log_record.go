@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"fmt"
 	"simple-db-go/file"
 )
 
@@ -41,5 +42,7 @@ func CreateLogRecord(b []byte) LogRecord {
 		return NewSetIntRecord(page)
 	case SETSTRING:
 		return NewSetStringRecord(page)
+	default:
+		panic(fmt.Sprintf("Unknown record operator. got=%d\n", page.GetInt(0)))
 	}
 }

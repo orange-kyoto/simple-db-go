@@ -86,7 +86,7 @@ func WriteSetStringRecord(
 	transactionNumber TransactionNumber,
 	blockID *file.BlockID,
 	offset int32,
-	oldValue string
+	oldValue string,
 ) log.LSN {
 	tpos := file.Int32ByteSize
 	fpos := tpos + file.Int32ByteSize
