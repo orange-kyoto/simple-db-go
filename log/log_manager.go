@@ -158,12 +158,13 @@ func (lm *LogManager) Close() {
 }
 
 // Log Iterator に相当する処理を関数で実装する
-func (lm *LogManager) StreamLogs(startBlockID *file.BlockID) <-chan RawLogRecord {
+func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 	// ディスクに書き込まれていないログレコードを先に書き込んでおく.
 	// 以降の処理では基本的にディスクから読み込むことになる.
 	lm.flush()
 
 	logChan := make(chan RawLogRecord)
+	startBlockID := lm.currentBlockID
 
 	// 初期化
 	blockID := startBlockID

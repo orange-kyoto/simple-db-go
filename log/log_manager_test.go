@@ -255,9 +255,8 @@ func TestStreamLogs(t *testing.T) {
 	record3 := []byte("test3") // 5 bytes
 	logManager.Append(record3)
 
-	// 一番後ろのブロックからスタートしてみる.
-	startBlockID := file.NewBlockID(testLogFileName, 2)
-	logChan := logManager.StreamLogs(startBlockID)
+	// 注意：currentBlockID は 3 になっているので、一番後ろのブロックからスタートすることになる
+	logChan := logManager.StreamLogs()
 
 	t.Run("ログレコードが順番に取得できること.", func(t *testing.T) {
 		var receivedRecords [][]byte
