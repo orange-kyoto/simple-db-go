@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/types"
+	"sync"
 	"time"
 )
 
@@ -23,15 +24,26 @@ type LockTable struct {
 
 const LOCK_WAIT_THRESHOLD = 3 * time.Second
 
-func NewLockTable() *LockTable {
-	requestChan := make(chan lockTableRequest)
-	closeChan := make(chan bool)
+var (
+	lockTableInstance *LockTable
+	once              sync.Once
+)
 
-	return &LockTable{
-		locks:       make(map[*file.BlockID]LockValue),
-		requestChan: requestChan,
-		closeChan:   closeChan,
-	}
+/*
+Concurrency Manager は各トランザクションごとに用意するが、ロックを管理するためには Lock Table は1つだけ使うべきである。
+なので、Singleton Pattern を使って Lock Table を実装する.
+*/
+func NewLockTable() *LockTable {
+	once.Do(func() {
+		lockTableInstance = &LockTable{
+			locks:       make(map[*file.BlockID]LockValue),
+			requestChan: make(chan lockTableRequest),
+			closeChan:   make(chan bool),
+		}
+		go lockTableInstance.run()
+	})
+
+	return lockTableInstance
 }
 
 func (lt *LockTable) run() {
