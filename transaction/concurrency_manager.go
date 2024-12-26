@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"simple-db-go/file"
-	"simple-db-go/types"
 )
 
 type lockType string
@@ -16,20 +15,18 @@ const (
 - 各トランザクションがそれ自身の ConcurrencyManager を持っている。
 */
 type ConcurrencyManager struct {
-	lockTable         *LockTable
-	transactionNumber types.TransactionNumber
+	lockTable *LockTable
 	// 当該トランザクションが保持しているロックを表現する.
 	locks map[*file.BlockID]lockType
 }
 
-func NewConcurrencyManager(transactionNumber types.TransactionNumber) *ConcurrencyManager {
+func NewConcurrencyManager() *ConcurrencyManager {
 	lockTable := NewLockTable()
 	locks := make(map[*file.BlockID]lockType)
 
 	return &ConcurrencyManager{
-		lockTable:         lockTable,
-		transactionNumber: transactionNumber,
-		locks:             locks,
+		lockTable: lockTable,
+		locks:     locks,
 	}
 }
 

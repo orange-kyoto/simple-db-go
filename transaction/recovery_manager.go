@@ -19,8 +19,14 @@ type RecoveryManager struct {
 	transactionNumber types.TransactionNumber
 }
 
-func NewRecoveryManager() *RecoveryManager {
-	return &RecoveryManager{}
+func NewRecoveryManager(transaction *Transaction, transactionNumber types.TransactionNumber, logManager *log.LogManager, bufferManager *buffer.BufferManager) *RecoveryManager {
+	WriteStartRecord(logManager, transactionNumber)
+	return &RecoveryManager{
+		logManager:        logManager,
+		bufferManager:     bufferManager,
+		transaction:       transaction,
+		transactionNumber: transactionNumber,
+	}
 }
 
 // 先に該当トランザクションに該当するログレコードや buffer pool をディスクに書き込む。

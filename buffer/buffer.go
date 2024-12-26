@@ -13,7 +13,7 @@ type Buffer struct {
 	contents *file.Page
 	blockID  *file.BlockID
 
-	pinCount int
+	pinCount types.Int
 
 	transactionNumber types.TransactionNumber
 

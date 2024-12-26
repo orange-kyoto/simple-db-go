@@ -16,7 +16,7 @@ const (
 
 type BufferManager struct {
 	bufferPool   []*Buffer
-	numAvailable int
+	numAvailable types.Int
 
 	waitList []chan bool
 
@@ -24,9 +24,9 @@ type BufferManager struct {
 	closeChan   chan bool
 }
 
-func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers int) *BufferManager {
+func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
 	bufferPool := make([]*Buffer, 0, numBuffers)
-	for i := 0; i < numBuffers; i++ {
+	for i := 0; i < int(numBuffers); i++ {
 		bufferPool = append(bufferPool, NewBuffer(fm, lm))
 	}
 
@@ -63,8 +63,8 @@ func (bm *BufferManager) run() {
 	}
 }
 
-func (bm *BufferManager) Available() int {
-	replyChan := make(chan int)
+func (bm *BufferManager) Available() types.Int {
+	replyChan := make(chan types.Int)
 	defer close(replyChan)
 
 	req := &AvailableBuffersRequest{
@@ -151,7 +151,7 @@ type BufferRequest interface {
 }
 
 type AvailableBuffersRequest struct {
-	replyChan chan int
+	replyChan chan types.Int
 }
 
 func (abr *AvailableBuffersRequest) resolve(bm *BufferManager) {
