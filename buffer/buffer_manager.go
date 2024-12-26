@@ -190,27 +190,25 @@ func (ur *UnpinRequest) resolve(bm *BufferManager) {
 
 // 注意：UnpinRequest.resolve の中でだけ呼ばれるので、これについての排他制御はしない。
 func (bm *BufferManager) notifyAll() {
-	fmt.Printf("Call notifyAll. waitList=%+v\n", bm.waitList)
 	for _, waitChan := range bm.waitList {
 		func(c chan bool) {
 			// Pinリクエストがすでにタイムアウトしているなどで、waitChan がクローズされている可能性がある.
 			// ここでは簡単に、recover でpanicを回避するだけにとどめる.
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Printf("[notifyAll] Panic recovered: channel is already closed. waitChan=%+v\n", c)
+					fmt.Printf("[BufferManager.notifyAll] Panic recovered: channel is already closed. waitChan=%+v\n", c)
 				}
 			}()
 
 			select {
 			case c <- true:
-				fmt.Printf("[notifyAll] Succeeded sending a message to waitChan. waitChan=%+v\n", waitChan)
+				fmt.Printf("[BufferManager.notifyAll] Succeeded sending a message to waitChan. waitChan=%+v\n", waitChan)
 			default:
-				fmt.Printf("[notifyAll] channel is already closed. waitChan=%+v\n", waitChan)
+				fmt.Printf("[BufferManager.notifyAll] channel is already closed. waitChan=%+v\n", waitChan)
 			}
 		}(waitChan)
 	}
 	bm.waitList = nil
-	fmt.Printf("Finish notifyAll. waitList=%+v\n", bm.waitList)
 }
 
 type PinRequest struct {
