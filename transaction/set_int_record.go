@@ -89,7 +89,6 @@ func WriteSetIntRecord(
 	blockID *file.BlockID,
 	offset types.Int,
 	oldValue types.Int,
-	newValue types.Int,
 ) log.LSN {
 	tpos := file.Int32ByteSize
 	fpos := tpos + file.Int32ByteSize
