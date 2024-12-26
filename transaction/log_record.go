@@ -6,7 +6,8 @@ import (
 	"simple-db-go/types"
 )
 
-type RecordOperator int32
+// 各ログの操作を識別する
+type RecordOperator types.Int
 
 const (
 	CHECKPOINT RecordOperator = iota

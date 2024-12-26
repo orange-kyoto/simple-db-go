@@ -17,6 +17,8 @@ type Buffer struct {
 
 	transactionNumber types.TransactionNumber
 
+	// この Buffer が保持する Page が変更された場合に、最新の LSN を保持する.
+	// もし LSN が負の値ならば、その変更に該当するログレコードは作成されないことを意味する.
 	lsn log.LSN
 }
 
@@ -65,6 +67,7 @@ func (b *Buffer) assignToBlock(blockID *file.BlockID) {
 
 func (b *Buffer) flush() {
 	if b.transactionNumber >= 0 {
+		// 先にログをディスクに書き込むのが大事
 		b.logManager.Flush(b.lsn)
 		b.fileManager.Write(b.blockID, b.contents)
 		b.transactionNumber = -1

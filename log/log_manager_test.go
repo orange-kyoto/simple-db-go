@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"simple-db-go/file"
+	"simple-db-go/util"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -116,8 +117,8 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 
 	t.Run("lm.logPage の先頭４バイトがログレコードのオフセットの位置（boundary）になっていること", func(t *testing.T) {
 		// ログレコードは後ろから書き込むので.
-		expectedBoundary := blockSize - (file.Int32ByteSize + len(record))
-		if boundary := logManager.logPage.GetInt(0); boundary != int32(expectedBoundary) {
+		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(record))
+		if boundary := logManager.logPage.GetInt(0); boundary != expectedBoundary {
 			t.Fatalf("boundary が不正です. actual=%d, expected=%d, lm=%v", boundary, expectedBoundary, logManager)
 		}
 	})
@@ -130,7 +131,7 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 		binary.LittleEndian.PutUint32(bytes, uint32(boundary))
 		// offset = boundary の位置には、ログレコードが書き込まれている
 		// ただし、ログレコードの先頭4バイトは ログレコード自身のバイトサイズである.
-		recordBytes := make([]byte, file.Int32ByteSize+len(record))
+		recordBytes := make([]byte, file.Int32ByteSize+util.Len(record))
 		binary.LittleEndian.PutUint32(recordBytes, uint32(len(record)))
 		copy(recordBytes[file.Int32ByteSize:], record)
 		copy(bytes[boundary:], recordBytes)
@@ -201,8 +202,8 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 
 	t.Run("logManager.logPageは、2つ目のレコードだけが書き込まれていること.", func(t *testing.T) {
 		expectedLogPageBytes := make([]byte, blockSize)
-		expectedBoundary := blockSize - (file.Int32ByteSize + len(record2))
-		expectedRecordBytes := make([]byte, file.Int32ByteSize+len(record2))
+		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(record2))
+		expectedRecordBytes := make([]byte, file.Int32ByteSize+util.Len(record2))
 		binary.LittleEndian.PutUint32(expectedRecordBytes, uint32(len(record2)))
 		copy(expectedRecordBytes[file.Int32ByteSize:], record2)
 		binary.LittleEndian.PutUint32(expectedLogPageBytes, uint32(expectedBoundary))
@@ -222,8 +223,8 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 
 	t.Run("ディスク上のログファイルにはブロック1つだけ書き込まれており、record1だけが記録されている.", func(t *testing.T) {
 		expectedContent := make([]byte, blockSize)
-		expectedBoundary := blockSize - (file.Int32ByteSize + len(record1))
-		expectedRecordBytes := make([]byte, file.Int32ByteSize+len(record1))
+		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(record1))
+		expectedRecordBytes := make([]byte, file.Int32ByteSize+util.Len(record1))
 		binary.LittleEndian.PutUint32(expectedRecordBytes, uint32(len(record1)))
 		copy(expectedRecordBytes[file.Int32ByteSize:], record1)
 		binary.LittleEndian.PutUint32(expectedContent, uint32(expectedBoundary))

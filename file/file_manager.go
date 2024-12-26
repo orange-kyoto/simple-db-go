@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"simple-db-go/types"
 )
 
 const fileFlag = os.O_RDWR | os.O_CREATE | os.O_SYNC
@@ -37,7 +38,8 @@ func (rfr *ReadFileRequest) openFile(fm *FileManager) (*os.File, error) {
 }
 
 func (rfr *ReadFileRequest) resolve(f *os.File, fm *FileManager) {
-	f.Seek(int64(rfr.blockID.Blknum*fm.BlockSize()), 0)
+	offset := rfr.blockID.Blknum * fm.BlockSize()
+	f.Seek(int64(offset), 0)
 	_, err := f.Read(rfr.page.Data)
 	rfr.handleError(err)
 }
@@ -96,7 +98,7 @@ func (afr *AppendFileRequest) resolve(f *os.File, fm *FileManager) {
 	}
 
 	fileBlockLength := fileInfo.Size() / int64(fm.BlockSize())
-	blockID := NewBlockID(filepath.Base(afr.getFileName(fm)), int(fileBlockLength))
+	blockID := NewBlockID(filepath.Base(afr.getFileName(fm)), types.Int(fileBlockLength))
 	emptyBytes := make([]byte, fm.BlockSize())
 	_, err = f.Seek(int64(blockID.Blknum*fm.BlockSize()), 0)
 	if err != nil {
@@ -122,7 +124,7 @@ func (afr *AppendFileRequest) handleError(err error) {
 
 type GetBlockLength struct {
 	fileName  string
-	replyChan chan int64
+	replyChan chan types.Int
 	errorChan chan error
 }
 
@@ -141,7 +143,7 @@ func (gbl *GetBlockLength) resolve(f *os.File, fm *FileManager) {
 		return
 	} else {
 		gbl.errorChan <- nil
-		gbl.replyChan <- fileInfo.Size() / int64(fm.BlockSize())
+		gbl.replyChan <- types.Int(fileInfo.Size() / int64(fm.BlockSize()))
 		return
 	}
 }
@@ -156,10 +158,10 @@ type FileManager struct {
 	files           map[string]*os.File
 	requestChan     chan FileRequest
 	closeChan       chan bool
-	blockSize       int
+	blockSize       types.Int
 }
 
-func NewFileManager(dbDirectoryPath string, blockSize int) *FileManager {
+func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
 	initDbDirectory(dbDirectoryPath)
 	cleanTempFiles(dbDirectoryPath)
 
@@ -206,7 +208,7 @@ func cleanTempFiles(dbDirectoryPath string) {
 	}
 }
 
-func (fm *FileManager) BlockSize() int {
+func (fm *FileManager) BlockSize() types.Int {
 	return fm.blockSize
 }
 
@@ -284,10 +286,10 @@ func (fm *FileManager) Append(fileName string) *BlockID {
 	return <-req.replyChan
 }
 
-func (fm *FileManager) GetBlockLength(fileName string) int64 {
+func (fm *FileManager) GetBlockLength(fileName string) types.Int {
 	req := &GetBlockLength{
 		fileName:  fileName,
-		replyChan: make(chan int64),
+		replyChan: make(chan types.Int),
 		errorChan: make(chan error),
 	}
 	fm.requestChan <- req

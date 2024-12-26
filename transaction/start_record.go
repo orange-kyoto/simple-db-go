@@ -52,8 +52,8 @@ func WriteStartRecord(logManager *log.LogManager, transactionNumber types.Transa
 
 	rawLogRecord := make([]byte, 0, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
-	page.SetInt(0, int32(START))
-	page.SetInt(tpos, int32(transactionNumber))
+	page.SetInt(0, types.Int(START))
+	page.SetInt(tpos, types.Int(transactionNumber))
 
 	return logManager.Append(page.Data)
 }

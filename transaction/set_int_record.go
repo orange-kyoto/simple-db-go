@@ -5,15 +5,16 @@ import (
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
+	"simple-db-go/util"
 )
 
 // TODO: ここに限った話ではないが、int32 に統一したいな。それで十分だし、そういう仕様ということにしたい。
 
 type SetIntRecord struct {
 	transactionNumber types.TransactionNumber
-	offset            int32
+	offset            types.Int
 	// ログレコードに記録された、その操作における変更前の値
-	oldValue int32
+	oldValue types.Int
 	blockID  *file.BlockID
 }
 
@@ -39,9 +40,9 @@ func NewSetIntRecord(page *file.Page) *SetIntRecord {
 	fpos := tpos + file.Int32ByteSize
 	filename := page.GetString(fpos)
 
-	bpos := fpos + file.MaxLength(len(filename))
+	bpos := fpos + file.MaxLength(util.Len(filename))
 	blockNumber := page.GetInt(bpos)
-	blockID := file.NewBlockID(filename, int(blockNumber))
+	blockID := file.NewBlockID(filename, blockNumber)
 
 	opos := bpos + file.Int32ByteSize
 	offset := page.GetInt(opos)
@@ -86,23 +87,23 @@ func WriteSetIntRecord(
 	logManager *log.LogManager,
 	txNum types.TransactionNumber,
 	blockID *file.BlockID,
-	offset int32,
-	oldValue int32,
-	newValue int32,
+	offset types.Int,
+	oldValue types.Int,
+	newValue types.Int,
 ) log.LSN {
 	tpos := file.Int32ByteSize
 	fpos := tpos + file.Int32ByteSize
-	bpos := fpos + file.MaxLength(len(blockID.Filename))
+	bpos := fpos + file.MaxLength(util.Len(blockID.Filename))
 	opos := bpos + file.Int32ByteSize
 	vpos := opos + file.Int32ByteSize
 	recordLength := vpos + file.Int32ByteSize // value が int32. つまり 4bytes.
 
 	rawLogRecord := make([]byte, 0, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
-	page.SetInt(0, int32(SETINT))
-	page.SetInt(tpos, int32(txNum))
+	page.SetInt(0, types.Int(SETINT))
+	page.SetInt(tpos, types.Int(txNum))
 	page.SetString(fpos, blockID.Filename)
-	page.SetInt(bpos, int32(blockID.Blknum))
+	page.SetInt(bpos, blockID.Blknum)
 	page.SetInt(opos, offset)
 	page.SetInt(vpos, oldValue)
 

@@ -55,8 +55,8 @@ func WriteCommitRecord(logManager *log.LogManager, transactionNumber types.Trans
 
 	rawLogRecord := make([]byte, 0, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
-	page.SetInt(0, int32(COMMIT))
-	page.SetInt(tpos, int32(transactionNumber))
+	page.SetInt(0, types.Int(COMMIT))
+	page.SetInt(tpos, types.Int(transactionNumber))
 
 	return logManager.Append(page.Data)
 }

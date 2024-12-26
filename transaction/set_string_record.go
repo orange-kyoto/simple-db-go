@@ -5,11 +5,12 @@ import (
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
+	"simple-db-go/util"
 )
 
 type SetStringRecord struct {
 	transactionNumber types.TransactionNumber
-	offset            int32
+	offset            types.Int
 	// ログレコードに記録された、その操作における変更前の値
 	oldValue string
 	blockID  *file.BlockID
@@ -39,9 +40,9 @@ func NewSetStringRecord(page *file.Page) *SetStringRecord {
 	fpos := tpos + file.Int32ByteSize
 	filename := page.GetString(fpos)
 
-	bpos := fpos + file.MaxLength(len(filename))
+	bpos := fpos + file.MaxLength(util.Len(filename))
 	blockNumber := page.GetInt(bpos)
-	blockID := file.NewBlockID(filename, int(blockNumber))
+	blockID := file.NewBlockID(filename, blockNumber)
 
 	opos := bpos + file.Int32ByteSize
 	offset := page.GetInt(opos)
@@ -86,22 +87,22 @@ func WriteSetStringRecord(
 	logManager *log.LogManager,
 	transactionNumber types.TransactionNumber,
 	blockID *file.BlockID,
-	offset int32,
+	offset types.Int,
 	oldValue string,
 ) log.LSN {
 	tpos := file.Int32ByteSize
 	fpos := tpos + file.Int32ByteSize
-	bpos := fpos + file.MaxLength(len(blockID.Filename))
+	bpos := fpos + file.MaxLength(util.Len(blockID.Filename))
 	opos := bpos + file.Int32ByteSize
 	vpos := opos + file.Int32ByteSize
-	recordLength := vpos + file.MaxLength(len(oldValue))
+	recordLength := vpos + file.MaxLength(util.Len(oldValue))
 
 	rawLogRecord := make([]byte, 0, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
-	page.SetInt(0, int32(SETSTRING))
-	page.SetInt(tpos, int32(transactionNumber))
+	page.SetInt(0, types.Int(SETSTRING))
+	page.SetInt(tpos, types.Int(transactionNumber))
 	page.SetString(fpos, blockID.Filename)
-	page.SetInt(bpos, int32(blockID.Blknum))
+	page.SetInt(bpos, blockID.Blknum)
 	page.SetInt(opos, offset)
 	page.SetString(vpos, oldValue)
 
