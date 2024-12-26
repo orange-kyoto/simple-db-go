@@ -13,6 +13,7 @@ import (
 type LockValue types.Int
 
 type LockTable struct {
+	// TODO: ここはキーはポインタじゃない方がいいかもしれない. そもそも大きいデータ構造でないし.
 	locks map[*file.BlockID]LockValue
 
 	// ロックの解放待ちになっている goroutine に通知を送るための channel たち.
