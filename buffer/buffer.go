@@ -3,10 +3,8 @@ package buffer
 import (
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
-
-// TODO: いい感じのパッケージに移動したい.
-type TransactionNum int
 
 type Buffer struct {
 	fileManager *file.FileManager
@@ -17,20 +15,20 @@ type Buffer struct {
 
 	pinCount int
 
-	transactionNum TransactionNum
+	transactionNumber types.TransactionNumber
 
 	lsn log.LSN
 }
 
 func NewBuffer(fm *file.FileManager, lm *log.LogManager) *Buffer {
 	return &Buffer{
-		fileManager:    fm,
-		logManager:     lm,
-		contents:       file.NewPage(fm.BlockSize()),
-		blockID:        nil,
-		pinCount:       0,
-		transactionNum: -1,
-		lsn:            -1,
+		fileManager:       fm,
+		logManager:        lm,
+		contents:          file.NewPage(fm.BlockSize()),
+		blockID:           nil,
+		pinCount:          0,
+		transactionNumber: -1,
+		lsn:               -1,
 	}
 }
 
@@ -43,8 +41,8 @@ func (b *Buffer) GetBlockID() *file.BlockID {
 }
 
 // もし lsn < 0 ならば、この呼び出し元での更新処理はログレコードを生成していないことを意味する.
-func (b *Buffer) SetModified(transactionNum TransactionNum, lsn log.LSN) {
-	b.transactionNum = transactionNum
+func (b *Buffer) SetModified(transactionNum types.TransactionNumber, lsn log.LSN) {
+	b.transactionNumber = transactionNum
 	if lsn >= 0 {
 		b.lsn = lsn
 	}
@@ -54,8 +52,8 @@ func (b *Buffer) IsPinned() bool {
 	return b.pinCount > 0
 }
 
-func (b *Buffer) ModifyingTransaction() TransactionNum {
-	return b.transactionNum
+func (b *Buffer) ModifyingTransaction() types.TransactionNumber {
+	return b.transactionNumber
 }
 
 func (b *Buffer) assignToBlock(blockID *file.BlockID) {
@@ -66,10 +64,10 @@ func (b *Buffer) assignToBlock(blockID *file.BlockID) {
 }
 
 func (b *Buffer) flush() {
-	if b.transactionNum >= 0 {
+	if b.transactionNumber >= 0 {
 		b.logManager.Flush(b.lsn)
 		b.fileManager.Write(b.blockID, b.contents)
-		b.transactionNum = -1
+		b.transactionNumber = -1
 	}
 }
 

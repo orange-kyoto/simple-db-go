@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
 
 type RollbackRecord struct {
-	transactionNumber TransactionNumber
+	transactionNumber types.TransactionNumber
 }
 
 /*
@@ -22,7 +23,7 @@ type RollbackRecord struct {
 */
 func NewRollbackRecord(page *file.Page) *RollbackRecord {
 	tpos := file.Int32ByteSize
-	txNum := TransactionNumber(page.GetInt(tpos))
+	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &RollbackRecord{
 		transactionNumber: txNum,
@@ -33,7 +34,7 @@ func (rr *RollbackRecord) GetOperation() RecordOperator {
 	return ROLLBACK
 }
 
-func (rr *RollbackRecord) GetTransactionNumber() TransactionNumber {
+func (rr *RollbackRecord) GetTransactionNumber() types.TransactionNumber {
 	return rr.transactionNumber
 }
 
@@ -48,7 +49,7 @@ func (rr *RollbackRecord) ToString() string {
 	)
 }
 
-func WriteRollbackRecord(logManager *log.LogManager, transactionNumber TransactionNumber) log.LSN {
+func WriteRollbackRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
 	tpos := file.Int32ByteSize
 	recordLength := tpos + file.Int32ByteSize
 

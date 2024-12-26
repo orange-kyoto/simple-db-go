@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -74,13 +75,13 @@ func (bm *BufferManager) Available() int {
 	return <-replyChan
 }
 
-func (bm *BufferManager) FlushAll(transactionNum TransactionNum) {
+func (bm *BufferManager) FlushAll(transactionNumber types.TransactionNumber) {
 	replyChan := make(chan bool)
 	defer close(replyChan)
 
 	req := &FlushAllRequest{
-		transactionNum: transactionNum,
-		replyChan:      replyChan,
+		transactionNumber: transactionNumber,
+		replyChan:         replyChan,
 	}
 
 	bm.requestChan <- req
@@ -158,14 +159,14 @@ func (abr *AvailableBuffersRequest) resolve(bm *BufferManager) {
 }
 
 type FlushAllRequest struct {
-	transactionNum TransactionNum
+	transactionNumber types.TransactionNumber
 	// 完了したことの通知だけするためのチャンネル. 値は使わない.
 	replyChan chan bool
 }
 
 func (far *FlushAllRequest) resolve(bm *BufferManager) {
 	for _, buffer := range bm.bufferPool {
-		if buffer.ModifyingTransaction() == far.transactionNum {
+		if buffer.ModifyingTransaction() == far.transactionNumber {
 			buffer.flush()
 		}
 	}

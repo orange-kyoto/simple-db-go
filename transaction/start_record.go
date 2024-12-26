@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
 
 type StartRecord struct {
-	transactionNumber TransactionNumber
+	transactionNumber types.TransactionNumber
 }
 
 /*
@@ -22,7 +23,7 @@ type StartRecord struct {
 */
 func NewStartRecord(page *file.Page) *StartRecord {
 	tpos := file.Int32ByteSize
-	txNum := TransactionNumber(page.GetInt(tpos))
+	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &StartRecord{
 		transactionNumber: txNum,
@@ -33,7 +34,7 @@ func (sr *StartRecord) GetOperation() RecordOperator {
 	return START
 }
 
-func (sr *StartRecord) GetTransactionNumber() TransactionNumber {
+func (sr *StartRecord) GetTransactionNumber() types.TransactionNumber {
 	return sr.transactionNumber
 }
 
@@ -45,7 +46,7 @@ func (sr *StartRecord) ToString() string {
 	return fmt.Sprintf("<START %d>", sr.transactionNumber)
 }
 
-func WriteStartRecord(logManager *log.LogManager, transactionNumber TransactionNumber) log.LSN {
+func WriteStartRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
 	tpos := file.Int32ByteSize
 	recordLength := tpos + file.Int32ByteSize
 

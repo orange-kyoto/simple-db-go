@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
 
 // TODO: ここに限った話ではないが、int32 に統一したいな。それで十分だし、そういう仕様ということにしたい。
 
 type SetIntRecord struct {
-	transactionNumber TransactionNumber
+	transactionNumber types.TransactionNumber
 	offset            int32
 	// ログレコードに記録された、その操作における変更前の値
 	oldValue int32
@@ -33,7 +34,7 @@ type SetIntRecord struct {
 */
 func NewSetIntRecord(page *file.Page) *SetIntRecord {
 	tpos := file.Int32ByteSize
-	txNum := TransactionNumber(page.GetInt(tpos))
+	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	fpos := tpos + file.Int32ByteSize
 	filename := page.GetString(fpos)
@@ -60,7 +61,7 @@ func (sir *SetIntRecord) GetOperation() RecordOperator {
 	return SETINT
 }
 
-func (sir *SetIntRecord) GetTransactionNumber() TransactionNumber {
+func (sir *SetIntRecord) GetTransactionNumber() types.TransactionNumber {
 	return sir.transactionNumber
 }
 
@@ -83,7 +84,7 @@ func (sir *SetIntRecord) ToString() string {
 
 func WriteSetIntRecord(
 	logManager *log.LogManager,
-	txNum TransactionNumber,
+	txNum types.TransactionNumber,
 	blockID *file.BlockID,
 	offset int32,
 	oldValue int32,

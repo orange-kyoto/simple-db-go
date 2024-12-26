@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
 
 type CommitRecord struct {
-	transactionNumber TransactionNumber
+	transactionNumber types.TransactionNumber
 }
 
 /*
@@ -22,7 +23,7 @@ type CommitRecord struct {
 */
 func NewCommitRecord(page *file.Page) *CommitRecord {
 	tpos := file.Int32ByteSize
-	txNum := TransactionNumber(page.GetInt(tpos))
+	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &CommitRecord{
 		transactionNumber: txNum,
@@ -33,7 +34,7 @@ func (cr *CommitRecord) GetOperation() RecordOperator {
 	return COMMIT
 }
 
-func (cr *CommitRecord) GetTransactionNumber() TransactionNumber {
+func (cr *CommitRecord) GetTransactionNumber() types.TransactionNumber {
 	return cr.transactionNumber
 }
 
@@ -48,7 +49,7 @@ func (cr *CommitRecord) ToString() string {
 	)
 }
 
-func WriteCommitRecord(logManager *log.LogManager, transactionNumber TransactionNumber) log.LSN {
+func WriteCommitRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
 	tpos := file.Int32ByteSize
 	recordLength := tpos + file.Int32ByteSize
 

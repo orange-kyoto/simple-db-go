@@ -3,11 +3,10 @@ package transaction
 import (
 	"fmt"
 	"simple-db-go/file"
+	"simple-db-go/types"
 )
 
 type RecordOperator int32
-
-type TransactionNumber int32
 
 const (
 	CHECKPOINT RecordOperator = iota
@@ -18,11 +17,11 @@ const (
 	SETSTRING
 )
 
-const DummyTransactionNumber TransactionNumber = -1
+const DummyTransactionNumber types.TransactionNumber = -1
 
 type LogRecord interface {
 	GetOperation() RecordOperator
-	GetTransactionNumber() TransactionNumber
+	GetTransactionNumber() types.TransactionNumber
 	Undo(*Transaction)
 }
 

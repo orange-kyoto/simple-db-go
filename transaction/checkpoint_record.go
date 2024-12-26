@@ -3,6 +3,7 @@ package transaction
 import (
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 )
 
 type CheckpointRecord struct{}
@@ -24,7 +25,7 @@ func (cr *CheckpointRecord) GetOperation() RecordOperator {
 	return CHECKPOINT
 }
 
-func (cr *CheckpointRecord) GetTransactionNumber() TransactionNumber {
+func (cr *CheckpointRecord) GetTransactionNumber() types.TransactionNumber {
 	return DummyTransactionNumber
 }
 
