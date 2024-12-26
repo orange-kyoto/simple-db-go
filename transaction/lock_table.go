@@ -49,12 +49,7 @@ func (lt *LockTable) run() {
 }
 
 func (lt *LockTable) SLock(blockID *file.BlockID) {
-	replyChan := make(chan bool)
-	waitChan := make(chan bool)
-	defer close(replyChan)
-	defer close(waitChan)
-
-	doRequest := func() {
+	requestFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
 		req := &sLockRequest{
 			blockID:   blockID,
 			replyChan: replyChan,
@@ -63,10 +58,45 @@ func (lt *LockTable) SLock(blockID *file.BlockID) {
 		lt.requestChan <- req
 	}
 
+	doLockRequest(blockID, requestFunc)
+}
+
+func (lt *LockTable) XLock(blockID *file.BlockID) {
+	requestFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
+		req := &xLockRequest{
+			blockID:   blockID,
+			replyChan: replyChan,
+			waitChan:  waitChan,
+		}
+		lt.requestChan <- req
+	}
+
+	doLockRequest(blockID, requestFunc)
+}
+
+func (lt *LockTable) Unlock(blockID *file.BlockID) {
+	requstFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
+		req := &unlockRequest{
+			blockID:   blockID,
+			replyChan: replyChan,
+			waitChan:  waitChan,
+		}
+		lt.requestChan <- req
+	}
+
+	doLockRequest(blockID, requstFunc)
+}
+
+func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool)) {
+	replyChan := make(chan bool)
+	waitChan := make(chan bool)
+	defer close(replyChan)
+	defer close(waitChan)
+
 	timeout := time.After(LOCK_WAIT_THRESHOLD)
 
 	for {
-		doRequest()
+		requestFunc(blockID, replyChan, waitChan)
 
 		select {
 		// 処理が完了したならそれで処理を終了する
@@ -76,13 +106,14 @@ func (lt *LockTable) SLock(blockID *file.BlockID) {
 		case <-waitChan:
 			continue
 		case <-timeout:
-			panic(fmt.Sprintf("SLock request timed out. blockID=%+v\n", blockID))
+			panic(fmt.Sprintf("Lock request timed out. blockID=%+v\n", blockID))
 		}
 	}
 }
 
-func (lt *LockTable) XLock(blockID *file.BlockID)  {}
-func (lt *LockTable) Unlock(blockID *file.BlockID) {}
+func (lt *LockTable) Close() {
+	lt.closeChan <- true
+}
 
 type lockTableRequest interface {
 	resolve(*LockTable)
