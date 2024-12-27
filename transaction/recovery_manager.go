@@ -6,8 +6,6 @@ import (
 	"simple-db-go/types"
 )
 
-// TODO: 全体的に実装は後でやる！
-
 // # リカバリマネージャ
 //
 // - ここでは undo のみ実装する。redo は実装しない。

@@ -39,7 +39,7 @@ func (cr *CheckpointRecord) ToString() string {
 
 func WriteCheckpointRecord(logManager *log.LogManager) log.LSN {
 	recordLength := file.Int32ByteSize
-	rawLogRecord := make([]byte, 0, recordLength)
+	rawLogRecord := make([]byte, recordLength)
 
 	page := file.NewPageFrom(rawLogRecord)
 	page.SetInt(0, types.Int(CHECKPOINT))

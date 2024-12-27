@@ -97,7 +97,7 @@ func WriteSetStringRecord(
 	vpos := opos + file.Int32ByteSize
 	recordLength := vpos + file.MaxLength(util.Len(oldValue))
 
-	rawLogRecord := make([]byte, 0, recordLength)
+	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
 	page.SetInt(0, types.Int(SETSTRING))
 	page.SetInt(tpos, types.Int(transactionNumber))

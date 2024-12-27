@@ -53,7 +53,7 @@ func WriteRollbackRecord(logManager *log.LogManager, transactionNumber types.Tra
 	tpos := file.Int32ByteSize
 	recordLength := tpos + file.Int32ByteSize
 
-	rawLogRecord := make([]byte, 0, recordLength)
+	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
 	page.SetInt(0, types.Int(ROLLBACK))
 	page.SetInt(tpos, types.Int(transactionNumber))

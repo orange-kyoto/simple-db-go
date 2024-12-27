@@ -8,7 +8,7 @@ import (
 
 // Log Sequence Number
 // 注意：1から始まる
-type LSN int
+type LSN types.Int
 
 // Log Record
 type RawLogRecord []byte
@@ -219,4 +219,14 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 	}()
 
 	return logChan
+}
+
+func (lm *LogManager) GetLSN() (latestLSN LSN, lastSavedLSN LSN) {
+	return lm.latestLSN, lm.lastSavedLSN
+}
+
+func (lm *LogManager) GetLogPage() *file.Page {
+	content := make([]byte, lm.fileManager.BlockSize())
+	copy(content, lm.logPage.Data)
+	return file.NewPageFrom(content)
 }

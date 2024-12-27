@@ -271,6 +271,7 @@ func (fm *FileManager) Write(blockID *BlockID, page *Page) {
 	}
 }
 
+// ファイルに新しくブロックを追加する。追加された分のブロックはまだ空。
 func (fm *FileManager) Append(fileName string) *BlockID {
 	req := &AppendFileRequest{
 		fileName:  fileName,

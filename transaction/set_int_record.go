@@ -8,8 +8,6 @@ import (
 	"simple-db-go/util"
 )
 
-// TODO: ここに限った話ではないが、int32 に統一したいな。それで十分だし、そういう仕様ということにしたい。
-
 type SetIntRecord struct {
 	transactionNumber types.TransactionNumber
 	offset            types.Int
@@ -97,7 +95,7 @@ func WriteSetIntRecord(
 	vpos := opos + file.Int32ByteSize
 	recordLength := vpos + file.Int32ByteSize // value が int32. つまり 4bytes.
 
-	rawLogRecord := make([]byte, 0, recordLength)
+	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
 	page.SetInt(0, types.Int(SETINT))
 	page.SetInt(tpos, types.Int(txNum))
