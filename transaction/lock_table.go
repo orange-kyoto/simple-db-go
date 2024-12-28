@@ -71,7 +71,7 @@ func (lt *LockTable) SLock(blockID *file.BlockID) {
 		lt.requestChan <- req
 	}
 
-	doLockRequest(blockID, requestFunc)
+	doLockRequest(blockID, requestFunc, "SLOCK")
 }
 
 func (lt *LockTable) XLock(blockID *file.BlockID) {
@@ -84,7 +84,7 @@ func (lt *LockTable) XLock(blockID *file.BlockID) {
 		lt.requestChan <- req
 	}
 
-	doLockRequest(blockID, requestFunc)
+	doLockRequest(blockID, requestFunc, "XLOCK")
 }
 
 func (lt *LockTable) Unlock(blockID *file.BlockID) {
@@ -97,10 +97,10 @@ func (lt *LockTable) Unlock(blockID *file.BlockID) {
 		lt.requestChan <- req
 	}
 
-	doLockRequest(blockID, requstFunc)
+	doLockRequest(blockID, requstFunc, "UNLOCK")
 }
 
-func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool)) {
+func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool), reqType string) {
 	replyChan := make(chan bool)
 	waitChan := make(chan bool)
 	defer close(replyChan)
@@ -119,7 +119,7 @@ func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID
 		case <-waitChan:
 			continue
 		case <-timeout:
-			panic(fmt.Sprintf("Lock request timed out. blockID=%+v\n", blockID))
+			panic(fmt.Sprintf("Lock request timed out. reqType=%s, blockID=%+v\n", reqType, blockID))
 		}
 	}
 }
@@ -187,12 +187,19 @@ type unlockRequest struct {
 
 func (ulr *unlockRequest) resolve(lockTable *LockTable) {
 	lockValue := lockTable.getLockValue(ulr.blockID)
-	if lockValue > 1 {
-		lockTable.locks[*ulr.blockID] = lockValue - 1
+	newLockValue := lockValue - 1
+	if newLockValue > 0 {
+		lockTable.locks[*ulr.blockID] = newLockValue
 	} else {
 		delete(lockTable.locks, *ulr.blockID)
+	}
+
+	// NOTE: 教科書では newLockValue <= 0 となっているが、ここでは newLockValue <= 1 としている.
+	// XLock の前に SLock を獲得するという前提と、今回の僕の実装では waitChan が受け取った後に再度 XLock を投げるという都合でこうしている.
+	if newLockValue <= 1 {
 		lockTable.notifyAll()
 	}
+
 	ulr.replyChan <- true
 }
 

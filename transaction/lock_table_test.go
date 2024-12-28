@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewLockTable(t *testing.T) {
+func TestLockTableNewLockTable(t *testing.T) {
 	t.Run("複数回 NewLockTable を読んでも同じインスタンスを返す.", func(t *testing.T) {
 		lockTable1 := NewLockTable()
 		lockTable2 := NewLockTable()
@@ -17,7 +17,7 @@ func TestNewLockTable(t *testing.T) {
 	})
 }
 
-func TestLockWithoutConflicts(t *testing.T) {
+func TestLockTableLockWithoutConflicts(t *testing.T) {
 	t.Run("SLock x 1, Unlock x 1が成功する.", func(t *testing.T) {
 		lockTable := NewLockTable()
 		testBlockID := file.NewBlockID("test_lock_table_1", 0)
@@ -77,7 +77,7 @@ func TestLockWithoutConflicts(t *testing.T) {
 	})
 }
 
-func TestLockWithSomeConflicts(t *testing.T) {
+func TestLockTableLockWithSomeConflicts(t *testing.T) {
 	t.Run("XLock が獲得されている時に SLock の獲得がブロックされる.", func(t *testing.T) {
 		lockTable := NewLockTable()
 		testBlockID := file.NewBlockID("test_lock_table_2", 0)
@@ -93,6 +93,7 @@ func TestLockWithSomeConflicts(t *testing.T) {
 	t.Run("XLock が獲得されているためにブロックされていた SLock だが、XLock が解放されると直ちに SLock の取得ができる.", func(t *testing.T) {
 		lockTable := NewLockTable()
 		testBlockID := file.NewBlockID("test_lock_table_3", 0)
+		lockTable.SLock(testBlockID)
 		lockTable.XLock(testBlockID)
 
 		done1 := make(chan bool)
@@ -114,5 +115,33 @@ func TestLockWithSomeConflicts(t *testing.T) {
 		lock, exists := lockTable.locks[*testBlockID]
 		assert.True(t, exists, "SLock が成功するので locks に要素が存在するべき.")
 		assert.Equal(t, LockValue(1), lock, "SLock が成功するので locks には LockValue(1) が格納されているべき.")
+	})
+
+	t.Run("SLock が獲得されているためにブロックされていた XLock だが、SLock が解放されると直ちに XLock の取得ができる.", func(t *testing.T) {
+		lockTable := NewLockTable()
+		testBlockID := file.NewBlockID("test_lock_table_4", 0)
+
+		lockTable.SLock(testBlockID)
+
+		done1 := make(chan bool)
+		go func() {
+			defer close(done1)
+			lockTable.SLock(testBlockID)
+			lockTable.XLock(testBlockID)
+		}()
+
+		done2 := make(chan bool)
+		go func() {
+			defer close(done2)
+			time.Sleep(1 * time.Second)
+			lockTable.Unlock(testBlockID)
+		}()
+
+		<-done1
+		<-done2
+
+		lock, exists := lockTable.locks[*testBlockID]
+		assert.True(t, exists, "XLock が成功するので locks に要素が存在するべき.")
+		assert.Equal(t, LockValue(-1), lock, "XLock が成功するので locks には LockValue(-1) が格納されているべき.")
 	})
 }
