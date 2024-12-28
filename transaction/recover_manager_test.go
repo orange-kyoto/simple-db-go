@@ -365,4 +365,4 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	})
 }
 
-// TODO: Rollback, Recovery のテスト追加
+// NOTE: Rollback, Recover は Transaction のメソッドに依存しているので、Transaction のテストで行う.

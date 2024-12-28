@@ -25,12 +25,12 @@ func TestLockWithoutConflicts(t *testing.T) {
 
 		assert.Len(t, lockTable.waitList, 0, "SLock は成功するので waitList は空であるべき.")
 
-		lock, exists := lockTable.locks[testBlockID]
+		lock, exists := lockTable.locks[*testBlockID]
 		assert.True(t, exists, "SLock は成功するので locks に要素が存在するべき.")
 		assert.Equal(t, LockValue(1), lock, "SLock は成功するので locks には LockValue(1) が格納されているべき.")
 
 		lockTable.Unlock(testBlockID)
-		lock, exists = lockTable.locks[testBlockID]
+		lock, exists = lockTable.locks[*testBlockID]
 		assert.False(t, exists, "Unlock は成功するので locks から要素が削除されるべき.")
 		assert.Equal(t, LockValue(0), lock, "Unlock は成功するので locks から要素が削除されるべき.")
 	})
@@ -43,14 +43,17 @@ func TestLockWithoutConflicts(t *testing.T) {
 
 		assert.Len(t, lockTable.waitList, 0, "SLock は成功するので waitList は空であるべき.")
 
-		lock, exists := lockTable.locks[testBlockID]
+		lock, exists := lockTable.locks[*testBlockID]
 		assert.True(t, exists, "SLock は成功するので locks に要素が存在するべき.")
 		assert.Equal(t, LockValue(2), lock, "SLock は成功するので locks には LockValue(2) が格納されているべき.")
 
 		lockTable.Unlock(testBlockID)
-		lock, exists = lockTable.locks[testBlockID]
+		lock, exists = lockTable.locks[*testBlockID]
 		assert.True(t, exists, "Unlock は成功するが、testBlockID の SLock は2つ獲得されているので、locks から要素が削除されないべき.")
 		assert.Equal(t, LockValue(1), lock, "Unlock は成功するが、testBlockID の SLock は2つ獲得されているので、locks から要素が削除されないべき.")
+
+		// 次のテストのために Unlock しておく.
+		lockTable.Unlock(testBlockID)
 	})
 
 	t.Run("XLock x 1, Unlock x 1 が成功する.", func(t *testing.T) {
@@ -63,12 +66,12 @@ func TestLockWithoutConflicts(t *testing.T) {
 
 		assert.Len(t, lockTable.waitList, 0, "SLock/XLock は成功するので waitList は空であるべき.")
 
-		lock, exists := lockTable.locks[testBlockID]
+		lock, exists := lockTable.locks[*testBlockID]
 		assert.True(t, exists, "XLock は成功するので locks に要素が存在するべき.")
 		assert.Equal(t, LockValue(-1), lock, "XLock は成功するので locks には LockValue(-1) が格納されているべき.")
 
 		lockTable.Unlock(testBlockID)
-		lock, exists = lockTable.locks[testBlockID]
+		lock, exists = lockTable.locks[*testBlockID]
 		assert.False(t, exists, "Unlock は成功するので locks から要素が削除されるべき.")
 		assert.Equal(t, LockValue(0), lock, "Unlock は成功するので locks から要素が削除されるべき.")
 	})
@@ -108,7 +111,7 @@ func TestLockWithSomeConflicts(t *testing.T) {
 		<-done1
 		<-done2
 
-		lock, exists := lockTable.locks[testBlockID]
+		lock, exists := lockTable.locks[*testBlockID]
 		assert.True(t, exists, "SLock が成功するので locks に要素が存在するべき.")
 		assert.Equal(t, LockValue(1), lock, "SLock が成功するので locks には LockValue(1) が格納されているべき.")
 	})

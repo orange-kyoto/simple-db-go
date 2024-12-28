@@ -13,8 +13,8 @@ import (
 type LockValue types.Int
 
 type LockTable struct {
-	// TODO: ここはキーはポインタじゃない方がいいかもしれない. そもそも大きいデータ構造でないし.
-	locks map[*file.BlockID]LockValue
+	// 注意：キーをポインタではなく、値そのものにする.
+	locks map[file.BlockID]LockValue
 
 	// ロックの解放待ちになっている goroutine に通知を送るための channel たち.
 	waitList []chan bool
@@ -37,7 +37,7 @@ Concurrency Manager は各トランザクションごとに用意するが、ロ
 func NewLockTable() *LockTable {
 	once.Do(func() {
 		lockTableInstance = &LockTable{
-			locks:       make(map[*file.BlockID]LockValue),
+			locks:       make(map[file.BlockID]LockValue),
 			requestChan: make(chan lockTableRequest),
 			closeChan:   make(chan bool),
 		}
@@ -151,7 +151,7 @@ func (slr *sLockRequest) resolve(lockTable *LockTable) {
 	}
 
 	lockValue := lockTable.getLockValue(slr.blockID)
-	lockTable.locks[slr.blockID] = lockValue + 1
+	lockTable.locks[*slr.blockID] = lockValue + 1
 	slr.replyChan <- true
 }
 
@@ -173,7 +173,7 @@ func (xlr *xLockRequest) resolve(lockTable *LockTable) {
 		return
 	}
 
-	lockTable.locks[xlr.blockID] = -1
+	lockTable.locks[*xlr.blockID] = -1
 	xlr.replyChan <- true
 }
 
@@ -188,9 +188,9 @@ type unlockRequest struct {
 func (ulr *unlockRequest) resolve(lockTable *LockTable) {
 	lockValue := lockTable.getLockValue(ulr.blockID)
 	if lockValue > 1 {
-		lockTable.locks[ulr.blockID] = lockValue - 1
+		lockTable.locks[*ulr.blockID] = lockValue - 1
 	} else {
-		delete(lockTable.locks, ulr.blockID)
+		delete(lockTable.locks, *ulr.blockID)
 		lockTable.notifyAll()
 	}
 	ulr.replyChan <- true
@@ -205,7 +205,7 @@ func (lt *LockTable) hasOtherSLocks(blockID *file.BlockID) bool {
 }
 
 func (lt *LockTable) getLockValue(blockID *file.BlockID) LockValue {
-	value, exists := lt.locks[blockID]
+	value, exists := lt.locks[*blockID]
 	if exists {
 		return value
 	} else {
