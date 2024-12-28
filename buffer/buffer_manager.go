@@ -5,6 +5,7 @@ import (
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
+	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -12,6 +13,11 @@ import (
 
 const (
 	WAIT_THRESHOLD = 3 * time.Second
+)
+
+var (
+	bufferManagerInstance *BufferManager
+	bufferManagerOnce     sync.Once
 )
 
 type BufferManager struct {
@@ -25,24 +31,26 @@ type BufferManager struct {
 }
 
 func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
-	bufferPool := make([]*Buffer, 0, numBuffers)
-	for i := 0; i < int(numBuffers); i++ {
-		bufferPool = append(bufferPool, NewBuffer(fm, lm))
-	}
+	bufferManagerOnce.Do(func() {
+		bufferPool := make([]*Buffer, 0, numBuffers)
+		for i := 0; i < int(numBuffers); i++ {
+			bufferPool = append(bufferPool, NewBuffer(fm, lm))
+		}
 
-	requestChan := make(chan BufferRequest)
-	closeChan := make(chan bool)
+		requestChan := make(chan BufferRequest)
+		closeChan := make(chan bool)
 
-	bm := &BufferManager{
-		bufferPool:   bufferPool,
-		numAvailable: numBuffers,
-		requestChan:  requestChan,
-		closeChan:    closeChan,
-	}
+		bufferManagerInstance = &BufferManager{
+			bufferPool:   bufferPool,
+			numAvailable: numBuffers,
+			requestChan:  requestChan,
+			closeChan:    closeChan,
+		}
 
-	go bm.run()
+		go bufferManagerInstance.run()
+	})
 
-	return bm
+	return bufferManagerInstance
 }
 
 func (bm *BufferManager) run() {
