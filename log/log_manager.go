@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"simple-db-go/file"
 	"simple-db-go/types"
+	"sync"
 )
 
 // Log Sequence Number
@@ -19,6 +20,11 @@ type AppendRequest struct {
 	replyChan chan LSN
 	errorChan chan error
 }
+
+var (
+	logManagerInstance *LogManager
+	logManagerOnce     sync.Once
+)
 
 type LogManager struct {
 	fileManager *file.FileManager
@@ -41,34 +47,35 @@ type LogManager struct {
 }
 
 func NewLogManager(fm *file.FileManager, logFileName string) *LogManager {
+	logManagerOnce.Do(func() {
+		b := make([]byte, fm.BlockSize())
+		logPage := file.NewPageFrom(b)
+		logSize := fm.GetBlockLength(logFileName)
 
-	b := make([]byte, fm.BlockSize())
-	logPage := file.NewPageFrom(b)
-	logSize := fm.GetBlockLength(logFileName)
+		logManagerInstance = &LogManager{
+			fileManager:    fm,
+			logFileName:    logFileName,
+			currentBlockID: nil,
+			logPage:        logPage,
+			latestLSN:      0,
+			lastSavedLSN:   0,
+			requestChan:    make(chan AppendRequest),
+			closeChan:      make(chan bool),
+		}
 
-	lm := &LogManager{
-		fileManager:    fm,
-		logFileName:    logFileName,
-		currentBlockID: nil,
-		logPage:        logPage,
-		latestLSN:      0,
-		lastSavedLSN:   0,
-		requestChan:    make(chan AppendRequest),
-		closeChan:      make(chan bool),
-	}
+		if logSize == 0 {
+			logManagerInstance.currentBlockID = logManagerInstance.appendNewBlock()
+		} else {
+			// ログファイルの末尾のブロックを読み込む
+			logManagerInstance.currentBlockID = file.NewBlockID(logFileName, logSize-1)
+			fm.Read(logManagerInstance.currentBlockID, logPage)
+		}
 
-	if logSize == 0 {
-		lm.currentBlockID = lm.appendNewBlock()
-	} else {
-		// ログファイルの末尾のブロックを読み込む
-		lm.currentBlockID = file.NewBlockID(logFileName, logSize-1)
-		fm.Read(lm.currentBlockID, logPage)
-	}
+		// 排他制御のための管理用 Goroutine
+		go logManagerInstance.run()
+	})
 
-	// 排他制御のための管理用 Goroutine
-	go lm.run()
-
-	return lm
+	return logManagerInstance
 }
 
 func (lm *LogManager) run() {

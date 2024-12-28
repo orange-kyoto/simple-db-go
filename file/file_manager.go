@@ -5,9 +5,42 @@ import (
 	"os"
 	"path/filepath"
 	"simple-db-go/types"
+	"sync"
 )
 
 const fileFlag = os.O_RDWR | os.O_CREATE | os.O_SYNC
+
+var (
+	fileManagerInstance *FileManager
+	fileManagerOnce     sync.Once
+)
+
+type FileManager struct {
+	dbDirectoryPath string
+	files           map[string]*os.File
+	requestChan     chan FileRequest
+	closeChan       chan bool
+	blockSize       types.Int
+}
+
+func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
+	fileManagerOnce.Do(func() {
+		initDbDirectory(dbDirectoryPath)
+		cleanTempFiles(dbDirectoryPath)
+
+		fileManagerInstance = &FileManager{
+			dbDirectoryPath: dbDirectoryPath,
+			files:           make(map[string]*os.File),
+			requestChan:     make(chan FileRequest),
+			closeChan:       make(chan bool),
+			blockSize:       blockSize,
+		}
+
+		go fileManagerInstance.run()
+	})
+
+	return fileManagerInstance
+}
 
 type FileRequest interface {
 	// 操作の対象となるファイル名を返す
@@ -151,30 +184,6 @@ func (gbl *GetBlockLength) resolve(f *os.File, fm *FileManager) {
 func (gbl *GetBlockLength) handleError(err error) {
 	gbl.errorChan <- err
 	gbl.replyChan <- -1
-}
-
-type FileManager struct {
-	dbDirectoryPath string
-	files           map[string]*os.File
-	requestChan     chan FileRequest
-	closeChan       chan bool
-	blockSize       types.Int
-}
-
-func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
-	initDbDirectory(dbDirectoryPath)
-	cleanTempFiles(dbDirectoryPath)
-
-	manager := &FileManager{
-		dbDirectoryPath: dbDirectoryPath,
-		files:           make(map[string]*os.File),
-		requestChan:     make(chan FileRequest),
-		closeChan:       make(chan bool),
-		blockSize:       blockSize,
-	}
-
-	go manager.run()
-	return manager
 }
 
 func initDbDirectory(dbDirectoryPath string) {
