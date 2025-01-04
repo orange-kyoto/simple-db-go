@@ -5,7 +5,6 @@ import (
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
-	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,11 +12,6 @@ import (
 
 const (
 	WAIT_THRESHOLD = 3 * time.Second
-)
-
-var (
-	bufferManagerInstance *BufferManager
-	bufferManagerOnce     sync.Once
 )
 
 type BufferManager struct {
@@ -30,27 +24,26 @@ type BufferManager struct {
 	closeChan   chan bool
 }
 
+// NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
 func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
-	bufferManagerOnce.Do(func() {
-		bufferPool := make([]*Buffer, 0, numBuffers)
-		for i := 0; i < int(numBuffers); i++ {
-			bufferPool = append(bufferPool, NewBuffer(fm, lm))
-		}
+	bufferPool := make([]*Buffer, 0, numBuffers)
+	for i := 0; i < int(numBuffers); i++ {
+		bufferPool = append(bufferPool, NewBuffer(fm, lm))
+	}
 
-		requestChan := make(chan BufferRequest)
-		closeChan := make(chan bool)
+	requestChan := make(chan BufferRequest)
+	closeChan := make(chan bool)
 
-		bufferManagerInstance = &BufferManager{
-			bufferPool:   bufferPool,
-			numAvailable: numBuffers,
-			requestChan:  requestChan,
-			closeChan:    closeChan,
-		}
+	bm := &BufferManager{
+		bufferPool:   bufferPool,
+		numAvailable: numBuffers,
+		requestChan:  requestChan,
+		closeChan:    closeChan,
+	}
 
-		go bufferManagerInstance.run()
-	})
+	go bm.run()
 
-	return bufferManagerInstance
+	return bm
 }
 
 func (bm *BufferManager) run() {

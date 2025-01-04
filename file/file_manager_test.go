@@ -114,12 +114,3 @@ func TestAppend(t *testing.T) {
 		t.Errorf("Expected empty block, got %v", value)
 	}
 }
-
-func TestFileManagerExistsOnlyOne(t *testing.T) {
-	fm1 := NewFileManager(testDir, blockSize)
-	fm2 := NewFileManager(testDir, blockSize)
-
-	if fm1 != fm2 {
-		t.Errorf("Expected only one file manager, got two")
-	}
-}

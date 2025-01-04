@@ -10,37 +10,37 @@ import (
 // そのトランザクションが pin しているバッファーを管理する構造体.
 type BufferList struct {
 	// トランザクションがアクセスするバッファーがどのブロックでPinされているかを管理する
-	buffers map[*file.BlockID]*buffer.Buffer
+	buffers map[file.BlockID]*buffer.Buffer
 	// 各ブロックが pin されている個数を管理する.
-	pins map[*file.BlockID]types.Int
+	pins map[file.BlockID]types.Int
 
 	bufferManager *buffer.BufferManager
 }
 
 func NewBufferList(bm *buffer.BufferManager) *BufferList {
 	return &BufferList{
-		buffers:       make(map[*file.BlockID]*buffer.Buffer),
-		pins:          make(map[*file.BlockID]types.Int),
+		buffers:       make(map[file.BlockID]*buffer.Buffer),
+		pins:          make(map[file.BlockID]types.Int),
 		bufferManager: bm,
 	}
 }
 
 func (bl *BufferList) GetBuffer(blockID *file.BlockID) *buffer.Buffer {
-	return bl.buffers[blockID]
+	return bl.buffers[*blockID]
 }
 
 func (bl *BufferList) Pin(blockID *file.BlockID) {
 	buffer := bl.bufferManager.Pin(blockID)
-	bl.buffers[blockID] = buffer
-	bl.pins[blockID] += 1
+	bl.buffers[*blockID] = buffer
+	bl.pins[*blockID] += 1
 }
 
 func (bl *BufferList) Unpin(blockID *file.BlockID) {
-	buffer := bl.buffers[blockID]
+	buffer := bl.buffers[*blockID]
 	bl.bufferManager.Unpin(buffer)
-	bl.pins[blockID] -= 1
-	if bl.pins[blockID] == 0 {
-		delete(bl.buffers, blockID)
+	bl.pins[*blockID] -= 1
+	if bl.pins[*blockID] == 0 {
+		delete(bl.buffers, *blockID)
 	}
 }
 
@@ -49,6 +49,6 @@ func (bl *BufferList) UnpinAll() {
 		buffer := bl.buffers[blockID]
 		bl.bufferManager.Unpin(buffer)
 	}
-	bl.buffers = make(map[*file.BlockID]*buffer.Buffer)
-	bl.pins = make(map[*file.BlockID]types.Int)
+	bl.buffers = make(map[file.BlockID]*buffer.Buffer)
+	bl.pins = make(map[file.BlockID]types.Int)
 }

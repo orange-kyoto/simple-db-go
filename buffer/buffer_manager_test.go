@@ -35,11 +35,6 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestBufferManagerExistsOnlyOnce(t *testing.T) {
-	bufferManager2 := NewBufferManager(fileManager, logManager, numBuffers)
-	assert.Same(t, bufferManager, bufferManager2, "BufferManager should be a singleton.")
-}
-
 func TestPinUnpinBuffer(t *testing.T) {
 	// テスト用のファイルを用意しておく
 	os.WriteFile(filepath.Join(testDir, "test_file"),

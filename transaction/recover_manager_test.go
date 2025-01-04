@@ -8,6 +8,7 @@ import (
 	"simple-db-go/log"
 	"simple-db-go/types"
 	"simple-db-go/util"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,11 +22,32 @@ const (
 	bufferPoolSize = 3
 )
 
+var (
+	fileManager   *file.FileManager
+	logManager    *log.LogManager
+	bufferManager *buffer.BufferManager
+	mu            sync.Mutex
+)
+
+// このテストでは同じインスタンスを使いたい.
+func startManagers() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if fileManager == nil {
+		fileManager = file.NewFileManager(testDir, blockSize)
+	}
+	if logManager == nil {
+		logManager = log.NewLogManager(fileManager, logFileName)
+	}
+	if bufferManager == nil {
+		bufferManager = buffer.NewBufferManager(fileManager, logManager, bufferPoolSize)
+	}
+}
+
 // 注意：Transaction の初期化時に RecoveryManager が初期化される.
 func startNewTransaction() (*file.FileManager, *log.LogManager, *buffer.BufferManager, *Transaction) {
-	fileManager := file.NewFileManager(testDir, blockSize)
-	logManager := log.NewLogManager(fileManager, logFileName)
-	bufferManager := buffer.NewBufferManager(fileManager, logManager, bufferPoolSize)
+	startManagers()
 	transaction := NewTransaction(fileManager, logManager, bufferManager)
 	return fileManager, logManager, bufferManager, transaction
 }

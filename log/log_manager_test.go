@@ -39,11 +39,6 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestLogManagerExistsOnlyOne(t *testing.T) {
-	logManager2 := NewLogManager(file.NewFileManager(testDir, blockSize), testLogFileName)
-	assert.Same(t, logManager, logManager2, "LogManager はシングルトンであるべき")
-}
-
 func TestInitLogManagerWithoutLogFile(t *testing.T) {
 	t.Run("ログファイルが期待したファイルサイズで存在すること.", func(t *testing.T) {
 		logFileInfo, err := os.Stat(testLogFilePath())

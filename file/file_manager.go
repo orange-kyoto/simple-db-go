@@ -5,15 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"simple-db-go/types"
-	"sync"
 )
 
 const fileFlag = os.O_RDWR | os.O_CREATE | os.O_SYNC
-
-var (
-	fileManagerInstance *FileManager
-	fileManagerOnce     sync.Once
-)
 
 type FileManager struct {
 	dbDirectoryPath string
@@ -23,23 +17,22 @@ type FileManager struct {
 	blockSize       types.Int
 }
 
+// NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
 func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
-	fileManagerOnce.Do(func() {
-		initDbDirectory(dbDirectoryPath)
-		cleanTempFiles(dbDirectoryPath)
+	initDbDirectory(dbDirectoryPath)
+	cleanTempFiles(dbDirectoryPath)
 
-		fileManagerInstance = &FileManager{
-			dbDirectoryPath: dbDirectoryPath,
-			files:           make(map[string]*os.File),
-			requestChan:     make(chan FileRequest),
-			closeChan:       make(chan bool),
-			blockSize:       blockSize,
-		}
+	fm := &FileManager{
+		dbDirectoryPath: dbDirectoryPath,
+		files:           make(map[string]*os.File),
+		requestChan:     make(chan FileRequest),
+		closeChan:       make(chan bool),
+		blockSize:       blockSize,
+	}
 
-		go fileManagerInstance.run()
-	})
+	go fm.run()
 
-	return fileManagerInstance
+	return fm
 }
 
 type FileRequest interface {

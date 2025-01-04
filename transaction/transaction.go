@@ -8,8 +8,6 @@ import (
 	"simple-db-go/types"
 )
 
-// TODO: 全体的に実装は後でやる！
-
 const END_OF_FILE types.Int = -1
 
 type Transaction struct {
@@ -31,7 +29,6 @@ func NewTransaction(
 	bufferList := NewBufferList(bm)
 
 	t := &Transaction{
-		// recoveryManager: ???
 		concurrencyManager: concurrencyManager,
 		bufferManager:      bm,
 		fileManager:        fm,
