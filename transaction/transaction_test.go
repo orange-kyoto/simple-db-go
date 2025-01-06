@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"os"
+	"path"
 	"simple-db-go/buffer"
 	"simple-db-go/file"
 	"simple-db-go/log"
@@ -319,5 +320,62 @@ func TestTransactionRecover(t *testing.T) {
 		expectedCheckpointLogRecord.SetInt(0, types.Int(CHECKPOINT))
 
 		assert.Equal(t, log.RawLogRecord(expectedCheckpointLogRecord.Data), actualCheckpointRecord, "CHECKPOINT レコードが最後に書き込まれている.")
+	})
+}
+
+func TestTransactionSize(t *testing.T) {
+	fileManager, _, _, transaction := startNewTransaction()
+	_, _, _, transaction2 := startNewTransaction()
+
+	// テスト用の書き換え対象ファイルを準備しておく.
+	fileName := "test_transaction_size.data"
+	testBlockID1 := file.NewBlockID(fileName, 0)
+	testBlockID2 := file.NewBlockID(fileName, 1)
+	testPage1 := file.NewPage(blockSizeForTransactionTest)
+	testPage2 := file.NewPage(blockSizeForTransactionTest)
+	testPage1.SetString(0, "test1")
+	testPage2.SetString(0, "test2")
+	fileManager.Write(testBlockID1, testPage1)
+	fileManager.Write(testBlockID2, testPage2)
+
+	t.Run("ファイルのブロックサイズを複数のトランザクションで正しく取得できる(SLockなので).", func(t *testing.T) {
+		result := transaction.Size(fileName)
+		result2 := transaction2.Size(fileName)
+		fileStat, _ := os.Stat(path.Join(testDirForTransactionTest, fileName))
+
+		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSizeForTransactionTest)), result, "ファイルのサイズが正しく取得できる.")
+		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSizeForTransactionTest)), result2, "ファイルのサイズが正しく取得できる.")
+	})
+}
+
+func TestTransactionAppend(t *testing.T) {
+	fileManager, _, _, transaction := startNewTransaction()
+
+	// テスト用の書き換え対象ファイルを準備しておく.
+	fileName := "test_transaction_append.data"
+	testBlockID1 := file.NewBlockID(fileName, 0)
+	testBlockID2 := file.NewBlockID(fileName, 1)
+	testPage1 := file.NewPage(blockSizeForTransactionTest)
+	testPage2 := file.NewPage(blockSizeForTransactionTest)
+	testPage1.SetString(0, "test1")
+	testPage2.SetString(0, "test2")
+	fileManager.Write(testBlockID1, testPage1)
+	fileManager.Write(testBlockID2, testPage2)
+
+	t.Run("正しくブロックの追加が行われる", func(t *testing.T) {
+		appendedBlockID := transaction.Append(fileName)
+		expectedBlockID := file.NewBlockID(fileName, 2)
+		assert.Equal(t, expectedBlockID, appendedBlockID, "新しいブロックが追加される.")
+	})
+
+	t.Run("XLock が獲得されているので、他トランザクションからのファイルサイズの取得がブロックされる.", func(t *testing.T) {
+		_, _, _, transaction2 := startNewTransaction()
+		assert.Panics(t, func() { transaction2.Size(fileName) }, "他トランザクションからのファイルサイズの取得がブロックされる.")
+	})
+
+	t.Run("XLock解放後には他トランザクションからファイルサイズの読み取りが可能になる.", func(t *testing.T) {
+		_, _, _, transaction3 := startNewTransaction()
+		transaction.Commit()
+		assert.NotPanics(t, func() { transaction3.Size(fileName) }, "他トランザクションからのファイルサイズの取得が可能になる.")
 	})
 }
