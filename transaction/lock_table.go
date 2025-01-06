@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
 	"sync"
@@ -23,7 +24,7 @@ type LockTable struct {
 	closeChan   chan bool
 }
 
-const LOCK_WAIT_THRESHOLD = 3 * time.Second
+const lockWaitThreshold = constants.WAIT_THRESHOLD
 
 var (
 	lockTableInstance *LockTable
@@ -106,7 +107,7 @@ func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID
 	defer close(replyChan)
 	defer close(waitChan)
 
-	timeout := time.After(LOCK_WAIT_THRESHOLD)
+	timeout := time.After(lockWaitThreshold)
 
 	for {
 		requestFunc(blockID, replyChan, waitChan)

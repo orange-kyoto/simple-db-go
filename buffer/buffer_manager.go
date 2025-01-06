@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -10,9 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-const (
-	WAIT_THRESHOLD = 3 * time.Second
-)
+const bufferPinWaitThreshold = constants.WAIT_THRESHOLD
 
 type BufferManager struct {
 	bufferPool   []*Buffer
@@ -123,7 +122,7 @@ func (bm *BufferManager) Pin(blockID *file.BlockID) *Buffer {
 		bm.requestChan <- req
 	}
 
-	timeout := time.After(WAIT_THRESHOLD)
+	timeout := time.After(bufferPinWaitThreshold)
 
 	for {
 		doRequest()

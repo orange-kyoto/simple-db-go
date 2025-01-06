@@ -92,7 +92,7 @@ func TestConcurrencyManagerLock(t *testing.T) {
 		done1 := make(chan bool)
 		go func() {
 			defer close(done1)
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 			cm1.Release()
 		}()
 

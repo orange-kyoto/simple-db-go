@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func sleep() {
+	time.Sleep(100 * time.Millisecond)
+}
+
 func TestLockTableNewLockTable(t *testing.T) {
 	t.Run("複数回 NewLockTable を読んでも同じインスタンスを返す.", func(t *testing.T) {
 		lockTable1 := NewLockTable()
@@ -106,7 +110,7 @@ func TestLockTableLockWithSomeConflicts(t *testing.T) {
 		done2 := make(chan bool)
 		go func() {
 			defer close(done2)
-			time.Sleep(1 * time.Second)
+			sleep()
 			lockTable.Unlock(testBlockID)
 		}()
 
@@ -134,7 +138,7 @@ func TestLockTableLockWithSomeConflicts(t *testing.T) {
 		done2 := make(chan bool)
 		go func() {
 			defer close(done2)
-			time.Sleep(1 * time.Second)
+			sleep()
 			lockTable.Unlock(testBlockID)
 		}()
 

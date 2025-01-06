@@ -128,7 +128,7 @@ func TestPinUnpinBuffer(t *testing.T) {
 		done2 := make(chan bool)
 		go func() {
 			defer close(done2)
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			bufferManager.Unpin(bufferManager.bufferPool[0])
 		}()
 
