@@ -1,7 +1,6 @@
 package transaction
 
 import (
-	"os"
 	"simple-db-go/buffer"
 	"simple-db-go/file"
 	"simple-db-go/log"
@@ -27,8 +26,6 @@ func startBufferList() (*file.FileManager, *buffer.BufferManager, *BufferList) {
 }
 
 func TestPinUnpinBuffers(t *testing.T) {
-	defer os.RemoveAll(testDirForBufferList)
-
 	fileManager, _, bufferList := startBufferList()
 
 	// Pin するためのファイルを用意し、ブロックを追加しておく。

@@ -57,6 +57,7 @@ func (t *Transaction) Rollback() {
 	fmt.Printf("transaction %d rolled back.\n", t.transactionNumber)
 }
 
+// NOTE: 他のトランザクションも含めて、完了していないトランザクションの変更を全て Undo する.
 func (t *Transaction) Recover() {
 	t.bufferManager.FlushAll(t.transactionNumber)
 	t.recoveryManager.Recover()

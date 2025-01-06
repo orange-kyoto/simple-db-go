@@ -138,7 +138,7 @@ func (bm *BufferManager) Pin(blockID *file.BlockID) *Buffer {
 			// 何もしない. もう一度リクエストを送るところからやり直す.
 			continue
 		case <-timeout:
-			panic(fmt.Sprintf("pin request timed out. blockID=%+v", blockID))
+			panic(fmt.Sprintf("pin request timed out. blockID=%+v, buffer_manager=%+v", blockID, bm))
 		}
 	}
 }

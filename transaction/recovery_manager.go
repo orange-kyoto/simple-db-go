@@ -36,13 +36,11 @@ func (rm *RecoveryManager) Commit() {
 }
 
 func (rm *RecoveryManager) Rollback() {
+	// doRollback では、トランザクションが変更した内容を元に戻す変更をバッファーに書き込む.
+	// 仮にそのトランザクションの変更がバッファーに残っていた場合、doRollback によってまさに巻き戻し処理が発生する.
+	// 最終的に、bufferManager.FlushAll でバッファーの内容をディスクに書き込む.
+	// 結果的に、当該トランザクションでの変更が巻き戻される.
 	rm.doRollback()
-	// ロールバックの処理を実行した後に buffer manager の flush を行うのは大丈夫なのか？逆じゃないのか？
-	// いや、Undo の実装は、Buffer Manager が Buffer に書き込む処理を行うので、この順番で問題ない。
-	// 気になるのは、doRollback() を実行した時に、Buffer Pool 内にすでに書き込まれた変更があるのではないか？それらはどうなるのか？というところ。もしかしたら、StreamLogs() でうまくやっている？
-	// →もしかしたら、Transaction の実装がまだないからわかっていないだけかもしれない。
-	// TODO: Transaction の実装をした後に、もう一度見直してみる。
-	// 			少なくとも、Undo で Buffer Pool に変更を加えるので、doRollback の後にFlushAllが1度必要なのは理解した。
 	rm.bufferManager.FlushAll(rm.transactionNumber)
 	lsn := WriteRollbackRecord(rm.logManager, rm.transactionNumber)
 	rm.logManager.Flush(lsn) // ROLLBACK レコードを書き込んでいる
@@ -114,6 +112,9 @@ func (rm *RecoveryManager) doRecover() {
 		if logRecord.GetOperation() == COMMIT || logRecord.GetOperation() == ROLLBACK {
 			finishedTransactionNumbers[logRecord.GetTransactionNumber()] = true
 		} else if _, exists := finishedTransactionNumbers[logRecord.GetTransactionNumber()]; !exists {
+			// 注意：他のトランザクションの変更も Undo する可能性がある.
+			//      つまり、logRecord に記録されているトランザクション番号と、引数に渡している rm.transaction は別の番号である可能性もあることに注意.
+			// 注意：recovery の処理はログを残さない. Buffer に巻き戻しの変更を加えてディスクに書き込むだけ. なので上の動作で問題ない.
 			logRecord.Undo(rm.transaction)
 		}
 	}
