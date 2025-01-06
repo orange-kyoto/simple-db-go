@@ -2,20 +2,20 @@ package buffer
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-const (
-	WAIT_THRESHOLD = 3 * time.Second
-)
+const bufferPinWaitThreshold = constants.WAIT_THRESHOLD
 
 type BufferManager struct {
 	bufferPool   []*Buffer
-	numAvailable int
+	numAvailable types.Int
 
 	waitList []chan bool
 
@@ -23,9 +23,10 @@ type BufferManager struct {
 	closeChan   chan bool
 }
 
-func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers int) *BufferManager {
+// NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
+func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
 	bufferPool := make([]*Buffer, 0, numBuffers)
-	for i := 0; i < numBuffers; i++ {
+	for i := 0; i < int(numBuffers); i++ {
 		bufferPool = append(bufferPool, NewBuffer(fm, lm))
 	}
 
@@ -62,8 +63,8 @@ func (bm *BufferManager) run() {
 	}
 }
 
-func (bm *BufferManager) Available() int {
-	replyChan := make(chan int)
+func (bm *BufferManager) Available() types.Int {
+	replyChan := make(chan types.Int)
 	defer close(replyChan)
 
 	req := &AvailableBuffersRequest{
@@ -74,13 +75,13 @@ func (bm *BufferManager) Available() int {
 	return <-replyChan
 }
 
-func (bm *BufferManager) FlushAll(transactionNum TransactionNum) {
+func (bm *BufferManager) FlushAll(transactionNumber types.TransactionNumber) {
 	replyChan := make(chan bool)
 	defer close(replyChan)
 
 	req := &FlushAllRequest{
-		transactionNum: transactionNum,
-		replyChan:      replyChan,
+		transactionNumber: transactionNumber,
+		replyChan:         replyChan,
 	}
 
 	bm.requestChan <- req
@@ -121,7 +122,7 @@ func (bm *BufferManager) Pin(blockID *file.BlockID) *Buffer {
 		bm.requestChan <- req
 	}
 
-	timeout := time.After(WAIT_THRESHOLD)
+	timeout := time.After(bufferPinWaitThreshold)
 
 	for {
 		doRequest()
@@ -136,7 +137,7 @@ func (bm *BufferManager) Pin(blockID *file.BlockID) *Buffer {
 			// 何もしない. もう一度リクエストを送るところからやり直す.
 			continue
 		case <-timeout:
-			panic(fmt.Sprintf("pin request timed out. blockID=%+v", blockID))
+			panic(fmt.Sprintf("pin request timed out. blockID=%+v, buffer_manager=%+v", blockID, bm))
 		}
 	}
 }
@@ -150,7 +151,7 @@ type BufferRequest interface {
 }
 
 type AvailableBuffersRequest struct {
-	replyChan chan int
+	replyChan chan types.Int
 }
 
 func (abr *AvailableBuffersRequest) resolve(bm *BufferManager) {
@@ -158,14 +159,14 @@ func (abr *AvailableBuffersRequest) resolve(bm *BufferManager) {
 }
 
 type FlushAllRequest struct {
-	transactionNum TransactionNum
+	transactionNumber types.TransactionNumber
 	// 完了したことの通知だけするためのチャンネル. 値は使わない.
 	replyChan chan bool
 }
 
 func (far *FlushAllRequest) resolve(bm *BufferManager) {
 	for _, buffer := range bm.bufferPool {
-		if buffer.ModifyingTransaction() == far.transactionNum {
+		if buffer.ModifyingTransaction() == far.transactionNumber {
 			buffer.flush()
 		}
 	}
@@ -189,27 +190,25 @@ func (ur *UnpinRequest) resolve(bm *BufferManager) {
 
 // 注意：UnpinRequest.resolve の中でだけ呼ばれるので、これについての排他制御はしない。
 func (bm *BufferManager) notifyAll() {
-	fmt.Printf("Call notifyAll. waitList=%+v\n", bm.waitList)
 	for _, waitChan := range bm.waitList {
 		func(c chan bool) {
 			// Pinリクエストがすでにタイムアウトしているなどで、waitChan がクローズされている可能性がある.
 			// ここでは簡単に、recover でpanicを回避するだけにとどめる.
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Printf("[notifyAll] Panic recovered: channel is already closed. waitChan=%+v\n", c)
+					fmt.Printf("[BufferManager.notifyAll] Panic recovered: channel is already closed. waitChan=%+v\n", c)
 				}
 			}()
 
 			select {
 			case c <- true:
-				fmt.Printf("[notifyAll] Succeeded sending a message to waitChan. waitChan=%+v\n", waitChan)
+				fmt.Printf("[BufferManager.notifyAll] Succeeded sending a message to waitChan. waitChan=%+v\n", waitChan)
 			default:
-				fmt.Printf("[notifyAll] channel is already closed. waitChan=%+v\n", waitChan)
+				fmt.Printf("[BufferManager.notifyAll] channel is already closed. waitChan=%+v\n", waitChan)
 			}
 		}(waitChan)
 	}
 	bm.waitList = nil
-	fmt.Printf("Finish notifyAll. waitList=%+v\n", bm.waitList)
 }
 
 type PinRequest struct {

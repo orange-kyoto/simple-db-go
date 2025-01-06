@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/types"
 	"testing"
 	"time"
 
@@ -15,40 +16,26 @@ const (
 	testDir     = "./test_buffer_manager"
 	logFileName = "test.log"
 	blockSize   = 16
+	numBuffers  = types.Int(3)
 )
 
-func setup(t *testing.T) (*file.FileManager, *log.LogManager) {
-	t.Helper()
+var (
+	fileManager   *file.FileManager
+	logManager    *log.LogManager
+	bufferManager *BufferManager
+)
 
-	fm := file.NewFileManager(testDir, blockSize)
-	lm := log.NewLogManager(fm, logFileName)
-
-	return fm, lm
-}
-
-func cleanup(t *testing.T) {
-	t.Helper()
+func TestMain(m *testing.M) {
 	os.RemoveAll(testDir)
-}
-
-func TestBufferManagerInitialization(t *testing.T) {
-	defer cleanup(t)
-
-	fm := file.NewFileManager(testDir, blockSize)
-	lm := log.NewLogManager(fm, logFileName)
-	numBuffers := 3
-	bm := NewBufferManager(fm, lm, numBuffers)
-
-	assert.Equal(t, 3, bm.numAvailable, "numAvailable should be 3")
+	fileManager = file.NewFileManager(testDir, blockSize)
+	logManager = log.NewLogManager(fileManager, logFileName)
+	bufferManager = NewBufferManager(fileManager, logManager, numBuffers)
+	code := m.Run()
+	os.RemoveAll(testDir)
+	os.Exit(code)
 }
 
 func TestPinUnpinBuffer(t *testing.T) {
-	defer cleanup(t)
-
-	fm, lm := setup(t)
-	numBuffers := 2
-	bm := NewBufferManager(fm, lm, numBuffers)
-
 	// テスト用のファイルを用意しておく
 	os.WriteFile(filepath.Join(testDir, "test_file"),
 		[]byte("Test File For Buffer Manager Test. This is a dummy file."),
@@ -56,6 +43,7 @@ func TestPinUnpinBuffer(t *testing.T) {
 	firstBlockID := file.NewBlockID("test_file", 0)
 	secondBlockID := file.NewBlockID("test_file", 1)
 	thirdBlockID := file.NewBlockID("test_file", 2)
+	forthBlockID := file.NewBlockID("test_file", 3)
 
 	// 一旦テストケースを整理
 	// 観点を整理する
@@ -67,63 +55,70 @@ func TestPinUnpinBuffer(t *testing.T) {
 	// というわけで、テスト用のファイルを用意しておいた方が良い。FileManager のメソッドをそのまま使えるだろう。
 
 	t.Run("[条件]まだバッファーされていない [期待値]バッファーされている", func(t *testing.T) {
-		testBuffer := bm.Pin(firstBlockID)
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, !bm.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
-		assert.Equal(t, 1, testBuffer.pinCount, "Pin count should be 1")
-		assert.Equal(t, 1, bm.numAvailable, "numAvailable should be 1")
+		testBuffer := bufferManager.Pin(firstBlockID)
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, !bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
+		assert.True(t, !bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should NOT be pinned")
+		assert.Equal(t, types.Int(1), testBuffer.pinCount, "Pin count should be 1")
+		assert.Equal(t, types.Int(2), bufferManager.numAvailable, "numAvailable should be 2")
 	})
 
 	t.Run("[条件]すでにバッファーされている＆ピンされている [期待値]ピンカウントが増えている", func(t *testing.T) {
 		// すでにピンされているブロックをさらにピンする
-		buffer := bm.Pin(firstBlockID)
+		buffer := bufferManager.Pin(firstBlockID)
 
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, !bm.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
-		assert.Equal(t, 2, buffer.pinCount, "Pin count should be 2")
-		assert.Equal(t, 1, bm.numAvailable, "numAvailable should be 1")
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, !bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
+		assert.True(t, !bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should NOT be pinned")
+		assert.Equal(t, types.Int(2), buffer.pinCount, "Pin count should be 2")
+		assert.Equal(t, types.Int(2), bufferManager.numAvailable, "numAvailable should be 2")
 	})
 
 	t.Run("[条件]すでにバッファーされている＆ピンされていない [期待値]ピンされている", func(t *testing.T) {
 		// 2つピンされているので、2回unpinする
-		pinnedBuffer := bm.bufferPool[0]
-		bm.Unpin(pinnedBuffer)
-		bm.Unpin(pinnedBuffer)
-		assert.True(t, !bm.bufferPool[0].IsPinned(), "Buffer[0] should NOT be pinned")
-		assert.True(t, !bm.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
-		assert.Equal(t, 2, bm.numAvailable, "numAvailable should be 2")
+		pinnedBuffer := bufferManager.bufferPool[0]
+		bufferManager.Unpin(pinnedBuffer)
+		bufferManager.Unpin(pinnedBuffer)
+		assert.True(t, !bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should NOT be pinned")
+		assert.True(t, !bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
+		assert.True(t, !bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should NOT be pinned")
+		assert.Equal(t, types.Int(3), bufferManager.numAvailable, "numAvailable should be 3")
 
 		// さらにピンする
-		bm.Pin(firstBlockID)
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, !bm.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
-		assert.Equal(t, 1, bm.numAvailable, "numAvailable should be 1")
+		bufferManager.Pin(firstBlockID)
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, !bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should NOT be pinned")
+		assert.True(t, !bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should NOT be pinned")
+		assert.Equal(t, types.Int(2), bufferManager.numAvailable, "numAvailable should be 2")
 	})
 
 	t.Run("[条件]空いているバッファーがない場合にPinしようとし、タイムアウトを過ぎた [期待値]パニックする", func(t *testing.T) {
-		// 空いている2つ目のバッファーをピンしておき、バッファープールが埋まるようにする.
-		bm.Pin(secondBlockID)
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, bm.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
-		assert.Equal(t, 0, bm.numAvailable, "numAvailable should be 0")
+		// 空いている2つ目,3つ目のバッファーをピンしておき、バッファープールが埋まるようにする.
+		bufferManager.Pin(secondBlockID)
+		bufferManager.Pin(thirdBlockID)
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
+		assert.True(t, bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should be pinned")
+		assert.Equal(t, types.Int(0), bufferManager.numAvailable, "numAvailable should be 0")
 
 		// 追加でピンしようとする. 他の goroutine がアンピンしないので、タイムアウトする.
 		assert.Panics(t, func() {
-			bm.Pin(thirdBlockID)
+			bufferManager.Pin(forthBlockID)
 		})
 	})
 
 	t.Run("[条件]空いているバッファーがない場合にPinしようとしたが、タイムアウト前にプールの空きができた [期待値]Pinできる", func(t *testing.T) {
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, bm.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
-		assert.Equal(t, 0, bm.numAvailable, "numAvailable should be 0")
-		assert.Len(t, bm.waitList, 1, "len(bm.waitList) should be 1 (前のテストで1つ残っているため).")
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
+		assert.True(t, bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should be pinned")
+		assert.Equal(t, types.Int(0), bufferManager.numAvailable, "numAvailable should be 0")
+		assert.Len(t, bufferManager.waitList, 1, "len(bm.waitList) should be 1 (前のテストで1つ残っているため).")
 
 		// 追加でピンしようとする.
 		done := make(chan bool)
 		go func() {
 			defer close(done)
-			pinnedBuffer := bm.Pin(thirdBlockID)
+			pinnedBuffer := bufferManager.Pin(forthBlockID)
 			if !assert.NotNil(t, pinnedBuffer, "Pin request should be successful.") {
 				t.Errorf("Pin request should be successful. thirdBlockID=%+v\n", thirdBlockID)
 			}
@@ -133,16 +128,17 @@ func TestPinUnpinBuffer(t *testing.T) {
 		done2 := make(chan bool)
 		go func() {
 			defer close(done2)
-			time.Sleep(500 * time.Millisecond)
-			bm.Unpin(bm.bufferPool[0])
+			time.Sleep(100 * time.Millisecond)
+			bufferManager.Unpin(bufferManager.bufferPool[0])
 		}()
 
 		// 両方の goroutine が終了するまで待つ
 		<-done
 		<-done2
 
-		assert.True(t, bm.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
-		assert.True(t, bm.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
-		assert.Equal(t, 0, bm.numAvailable, "numAvailable should be 0")
+		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
+		assert.True(t, bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
+		assert.True(t, bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should be pinned")
+		assert.Equal(t, types.Int(0), bufferManager.numAvailable, "numAvailable should be 0")
 	})
 }

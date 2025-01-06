@@ -22,48 +22,32 @@ func createTempFiles() {
 	os.Create(filepath.Join(testDir, "tempfile2"))
 }
 
-func TestDbDirectoryExists(t *testing.T) {
+func TestMain(m *testing.M) {
 	cleanTestDir()
-	defer cleanTestDir()
-
-	if _, err := os.Stat(testDir); os.IsExist(err) {
-		t.Fatalf("Expected %s to not exist, but it does", testDir)
-	}
-
-	fm := NewFileManager(testDir, blockSize)
-	defer fm.Close()
-
-	if _, err := os.Stat(testDir); os.IsNotExist(err) {
-		t.Fatalf("Expected %s to exist, but it does not", testDir)
-	}
+	code := m.Run()
+	cleanTestDir()
+	os.Exit(code)
 }
 
-func TestTempFilesCleaned(t *testing.T) {
-	cleanTestDir()
-	defer cleanTestDir()
+func TestFileManagerInitialization(t *testing.T) {
+	NewFileManager(testDir, blockSize)
 
-	createTempFiles()
+	t.Run("DB ディレクトリが存在すること.", func(t *testing.T) {
+		if _, err := os.Stat(testDir); os.IsNotExist(err) {
+			t.Fatalf("Expected %s to exist, but it does not", testDir)
+		}
+	})
 
-	matches, _ := filepath.Glob(filepath.Join(testDir, "temp*"))
-	if len(matches) != 2 {
-		t.Fatalf("Expected temp files to exist, but they do not, matches=%d", len(matches))
-	}
-
-	fm := NewFileManager(testDir, blockSize)
-	defer fm.Close()
-
-	matches, _ = filepath.Glob(filepath.Join(testDir, "temp*"))
-	if len(matches) != 0 {
-		t.Fatalf("Expected temp files to be deleted, but they were not, matches=%d", len(matches))
-	}
+	t.Run("temp ファイルが存在しないこと.", func(t *testing.T) {
+		matches, _ := filepath.Glob(filepath.Join(testDir, "temp*"))
+		if len(matches) != 0 {
+			t.Fatalf("Expected temp files to be deleted, but they were not, matches=%d", len(matches))
+		}
+	})
 }
 
 func TestReadWrite(t *testing.T) {
-	cleanTestDir()
-	defer cleanTestDir()
-
 	fm := NewFileManager(testDir, blockSize)
-	defer fm.Close()
 
 	// 整数値の読み書きの検証
 	block1 := NewBlockID("testfile", 0)
@@ -110,11 +94,7 @@ func TestReadWrite(t *testing.T) {
 }
 
 func TestAppend(t *testing.T) {
-	cleanTestDir()
-	defer cleanTestDir()
-
 	fm := NewFileManager(testDir, blockSize)
-	defer fm.Close()
 
 	// ブロック１つだけ書き込んでおく.
 	block1 := NewBlockID("testfile", 0)

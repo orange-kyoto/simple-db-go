@@ -1,16 +1,17 @@
 package file
 
 import (
+	"fmt"
 	"hash/fnv"
-	"strconv"
+	"simple-db-go/types"
 )
 
 type BlockID struct {
 	Filename string
-	Blknum   int
+	Blknum   types.Int
 }
 
-func NewBlockID(filename string, blknum int) *BlockID {
+func NewBlockID(filename string, blknum types.Int) *BlockID {
 	return &BlockID{Filename: filename, Blknum: blknum}
 }
 
@@ -19,7 +20,7 @@ func (b BlockID) Equals(other BlockID) bool {
 }
 
 func (b BlockID) ToString() string {
-	return "[file " + b.Filename + ", block " + strconv.Itoa(b.Blknum) + "]"
+	return fmt.Sprintf("[file %s, block %d]", b.Filename, b.Blknum)
 }
 
 func (b BlockID) HashCode() int {

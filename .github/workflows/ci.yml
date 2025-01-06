@@ -43,4 +43,4 @@ jobs:
           go mod verify
 
       - name: Run tests
-        run: go test ./... -v
+        run: go test ./... -v -tags=test
