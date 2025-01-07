@@ -17,20 +17,20 @@ import (
 // また、先頭バイトには empty/inuse フラグがあるとする.
 type Layout struct {
 	schema   *Schema
-	offsets  map[FieldName]FieldOffset
+	offsets  map[FieldName]FieldOffsetInSlot
 	slotSize types.Int
 }
 
 // テーブルが新規作成された際のコンストラクタ.
 // 単に与えられた Schema を元に Layout を計算する.
 func NewLayout(schema *Schema) *Layout {
-	offsets := make(map[FieldName]FieldOffset)
+	offsets := make(map[FieldName]FieldOffsetInSlot)
 
 	// 各スロットの先頭４バイトのフラグを考慮する.
 	flagPos := constants.Int32ByteSize
 
 	for _, fieldName := range schema.Fields() {
-		offsets[fieldName] = FieldOffset(flagPos)
+		offsets[fieldName] = FieldOffsetInSlot(flagPos)
 		flagPos += getLengthInBytes(schema, fieldName)
 	}
 
@@ -43,7 +43,7 @@ func NewLayout(schema *Schema) *Layout {
 
 // 既存テーブルに対してのコンストラクタ.
 // 既に計算された値をベースに Layout を計算する.
-func NewLayoutWith(schema *Schema, offsets map[FieldName]FieldOffset, slotSize types.Int) *Layout {
+func NewLayoutWith(schema *Schema, offsets map[FieldName]FieldOffsetInSlot, slotSize types.Int) *Layout {
 	return &Layout{
 		schema:   schema,
 		offsets:  offsets,
@@ -55,7 +55,7 @@ func (l *Layout) GetSchema() *Schema {
 	return l.schema
 }
 
-func (l *Layout) GetOffset(fieldName FieldName) FieldOffset {
+func (l *Layout) GetOffset(fieldName FieldName) FieldOffsetInSlot {
 	offset, _ := l.offsets[fieldName]
 	return offset
 }
