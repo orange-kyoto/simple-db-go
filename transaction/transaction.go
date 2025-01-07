@@ -121,14 +121,14 @@ func (t *Transaction) BlockSize() types.Int {
 
 // 注意：End Of File marker に対してのロックを獲得して排他制御をする.
 func (t *Transaction) Size(filename string) types.Int {
-	dummyBlockID := file.NewBlockID(filename, END_OF_FILE)
+	dummyBlockID := file.NewBlockID(filename, types.BlockNumber(END_OF_FILE))
 	t.concurrencyManager.SLock(dummyBlockID)
 	return t.fileManager.GetBlockLength(filename)
 }
 
 // 注意：End Of File marker に対してのロックを獲得して排他制御をする.
 func (t *Transaction) Append(filename string) *file.BlockID {
-	dummyBlockID := file.NewBlockID(filename, END_OF_FILE)
+	dummyBlockID := file.NewBlockID(filename, types.BlockNumber(END_OF_FILE))
 	t.concurrencyManager.XLock(dummyBlockID)
 	return t.fileManager.Append(filename)
 }

@@ -205,7 +205,7 @@ func TestTransactionRollback(t *testing.T) {
 
 	t.Run("Commit, Rollback のログが記録されていること.", func(t *testing.T) {
 		logFileBlockSize := fileManager.GetBlockLength(logFileNameForTransactionTest)
-		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, logFileBlockSize-1)
+		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, types.BlockNumber(logFileBlockSize-1))
 		latestLogPage := file.NewPage(blockSizeForTransactionTest)
 		fileManager.Read(latestLogBlockID, latestLogPage)
 
@@ -309,7 +309,7 @@ func TestTransactionRecover(t *testing.T) {
 	t.Run("CHECKPOINT レコードが最後に書き込まれていること.", func(t *testing.T) {
 		// NOTE: ディスクに既に書き込まれていることを検証するので、logManager.StreamLogs() は使わない.
 		logFileBlockSize := fileManager.GetBlockLength(logFileNameForTransactionTest)
-		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, logFileBlockSize-1)
+		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, types.BlockNumber(logFileBlockSize-1))
 		latestLogPage := file.NewPage(blockSizeForTransactionTest)
 		fileManager.Read(latestLogBlockID, latestLogPage)
 

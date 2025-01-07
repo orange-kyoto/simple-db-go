@@ -120,7 +120,7 @@ func TestRecoveryManagerSetInt(t *testing.T) {
 		fpos := tpos + constants.Int32ByteSize
 		assert.Equal(t, testBlockID.Filename, rawRecordPage.GetString(fpos), "ファイル名は test_recovery_manager.data であるべき")
 		bpos := fpos + file.MaxLength(util.Len(testBlockID.Filename))
-		assert.Equal(t, testBlockID.Blknum, rawRecordPage.GetInt(bpos), "ブロック番号は 0 であるべき")
+		assert.Equal(t, testBlockID.BlockNumber, types.BlockNumber(rawRecordPage.GetInt(bpos)), "ブロック番号は 0 であるべき")
 		opos := bpos + constants.Int32ByteSize
 		assert.Equal(t, types.Int(2), rawRecordPage.GetInt(opos), "オフセットは 2 であるべき")
 		vpos := opos + constants.Int32ByteSize
@@ -168,7 +168,7 @@ func TestRecoveryManagerSetString(t *testing.T) {
 		fpos := tpos + constants.Int32ByteSize
 		assert.Equal(t, testBlockID.Filename, rawRecordPage.GetString(fpos), "ファイル名は test_recovery_manager.data であるべき")
 		bpos := fpos + file.MaxLength(util.Len(testBlockID.Filename))
-		assert.Equal(t, testBlockID.Blknum, rawRecordPage.GetInt(bpos), "ブロック番号は 1 であるべき")
+		assert.Equal(t, testBlockID.BlockNumber, types.BlockNumber(rawRecordPage.GetInt(bpos)), "ブロック番号は 1 であるべき")
 		opos := bpos + constants.Int32ByteSize
 		assert.Equal(t, types.Int(3), rawRecordPage.GetInt(opos), "オフセットは 3 であるべき")
 		vpos := opos + constants.Int32ByteSize

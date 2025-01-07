@@ -42,7 +42,7 @@ func NewSetStringRecord(page *file.Page) *SetStringRecord {
 	filename := page.GetString(fpos)
 
 	bpos := fpos + file.MaxLength(util.Len(filename))
-	blockNumber := page.GetInt(bpos)
+	blockNumber := types.BlockNumber(page.GetInt(bpos))
 	blockID := file.NewBlockID(filename, blockNumber)
 
 	opos := bpos + constants.Int32ByteSize
@@ -103,7 +103,7 @@ func WriteSetStringRecord(
 	page.SetInt(0, types.Int(SETSTRING))
 	page.SetInt(tpos, types.Int(transactionNumber))
 	page.SetString(fpos, blockID.Filename)
-	page.SetInt(bpos, blockID.Blknum)
+	page.SetInt(bpos, types.Int(blockID.BlockNumber))
 	page.SetInt(opos, offset)
 	page.SetString(vpos, oldValue)
 

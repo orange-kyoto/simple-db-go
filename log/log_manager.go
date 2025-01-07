@@ -62,7 +62,7 @@ func NewLogManager(fm *file.FileManager, logFileName string) *LogManager {
 		lm.currentBlockID = lm.appendNewBlock()
 	} else {
 		// ログファイルの末尾のブロックを読み込む
-		lm.currentBlockID = file.NewBlockID(logFileName, logSize-1)
+		lm.currentBlockID = file.NewBlockID(logFileName, types.BlockNumber(logSize-1))
 		fm.Read(lm.currentBlockID, logPage)
 	}
 
@@ -187,7 +187,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 		defer close(logChan)
 
 		hasNext := func() bool {
-			return currentPosition < lm.fileManager.BlockSize() || blockID.Blknum > 0
+			return currentPosition < lm.fileManager.BlockSize() || blockID.BlockNumber > 0
 		}
 
 		for {
@@ -202,7 +202,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 			// 最新のログから辿れるようにするので、ログファイルないの後ろのブロックから読み込むイメージ
 			if currentPosition == lm.fileManager.BlockSize() {
 				fmt.Printf("Moving to previous block...\n")
-				blockID = file.NewBlockID(blockID.Filename, blockID.Blknum-1)
+				blockID = file.NewBlockID(blockID.Filename, blockID.BlockNumber-1)
 				moveToBlock(blockID)
 				fmt.Printf("After moving to previous block. currentPosition=%d\n", currentPosition)
 				// ちゃんとここで更新されているっぽい。

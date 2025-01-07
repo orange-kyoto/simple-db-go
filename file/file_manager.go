@@ -64,7 +64,7 @@ func (rfr *ReadFileRequest) openFile(fm *FileManager) (*os.File, error) {
 }
 
 func (rfr *ReadFileRequest) resolve(f *os.File, fm *FileManager) {
-	offset := rfr.blockID.Blknum * fm.BlockSize()
+	offset := types.Int(rfr.blockID.BlockNumber) * fm.BlockSize()
 	f.Seek(int64(offset), 0)
 	_, err := f.Read(rfr.page.Data)
 	rfr.handleError(err)
@@ -85,7 +85,8 @@ func (wfr *WriteFileRequest) getFileName(fm *FileManager) string {
 }
 
 func (wfr *WriteFileRequest) resolve(f *os.File, fm *FileManager) {
-	_, err := f.Seek(int64(wfr.blockID.Blknum*fm.BlockSize()), 0)
+	offset := types.Int(wfr.blockID.BlockNumber) * fm.BlockSize()
+	_, err := f.Seek(int64(offset), 0)
 	if err != nil {
 		wfr.handleError(err)
 		return
@@ -124,9 +125,10 @@ func (afr *AppendFileRequest) resolve(f *os.File, fm *FileManager) {
 	}
 
 	fileBlockLength := fileInfo.Size() / int64(fm.BlockSize())
-	blockID := NewBlockID(filepath.Base(afr.getFileName(fm)), types.Int(fileBlockLength))
+	blockID := NewBlockID(filepath.Base(afr.getFileName(fm)), types.BlockNumber(fileBlockLength))
 	emptyBytes := make([]byte, fm.BlockSize())
-	_, err = f.Seek(int64(blockID.Blknum*fm.BlockSize()), 0)
+	offset := types.Int(blockID.BlockNumber) * fm.BlockSize()
+	_, err = f.Seek(int64(offset), 0)
 	if err != nil {
 		afr.handleError(err)
 		return
