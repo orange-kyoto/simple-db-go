@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -38,7 +39,7 @@ func (cr *CheckpointRecord) ToString() string {
 }
 
 func WriteCheckpointRecord(logManager *log.LogManager) log.LSN {
-	recordLength := file.Int32ByteSize
+	recordLength := constants.Int32ByteSize
 	rawLogRecord := make([]byte, recordLength)
 
 	page := file.NewPageFrom(rawLogRecord)

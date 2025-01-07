@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"simple-db-go/buffer"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -62,13 +63,13 @@ func TestRecoveryManagerInitialization(t *testing.T) {
 
 		// LogPage の内容の検証
 		logPage := logManager.GetLogPage()
-		expectedLogRecordSize := file.Int32ByteSize * 2
-		expectedBoundary := types.Int(500) // blockSize - (file.Int32ByteSize + expectedLogRecordSize)
+		expectedLogRecordSize := constants.Int32ByteSize * 2
+		expectedBoundary := types.Int(500) // blockSize - (constants.Int32ByteSize + expectedLogRecordSize)
 
 		assert.Equal(t, expectedBoundary, logPage.GetInt(0), "ログレコードのboundaryは 4 であるべき")
 		assert.Equal(t, expectedLogRecordSize, logPage.GetInt(expectedBoundary), "ログレコードのサイズは 8 であるべき")
-		assert.Equal(t, types.Int(START), logPage.GetInt(expectedBoundary+file.Int32ByteSize), "ログレコードの種類は START であるべき")
-		assert.Equal(t, types.Int(1), logPage.GetInt(expectedBoundary+file.Int32ByteSize*2), "トランザクション番号は 1 であるべき")
+		assert.Equal(t, types.Int(START), logPage.GetInt(expectedBoundary+constants.Int32ByteSize), "ログレコードの種類は START であるべき")
+		assert.Equal(t, types.Int(1), logPage.GetInt(expectedBoundary+constants.Int32ByteSize*2), "トランザクション番号は 1 であるべき")
 
 		// constructor の検証
 		rawRecordPage := file.NewPageFrom(logPage.Data[expectedBoundary:])
@@ -88,7 +89,7 @@ func TestRecoveryManagerInitialization(t *testing.T) {
 
 		assert.Equal(t, int64(blockSizeForRMTest), fileInfo.Size(), "ファイルに書き込まれていないが、logManager が最初のブロック分を append している.")
 		assert.Equal(t, types.Int(blockSizeForRMTest), expectedFilePage.GetInt(0), "ファイルに書き込まれていないので、boundary だけが書き込まれている.")
-		assert.Equal(t, make([]byte, blockSizeForRMTest-file.Int32ByteSize), expectedFilePage.Data[file.Int32ByteSize:], "boundary 以外は空のままである.")
+		assert.Equal(t, make([]byte, blockSizeForRMTest-constants.Int32ByteSize), expectedFilePage.Data[constants.Int32ByteSize:], "boundary 以外は空のままである.")
 	})
 }
 
@@ -114,18 +115,18 @@ func TestRecoveryManagerSetInt(t *testing.T) {
 		rawRecordPage := file.NewPageFrom(rawRecord)
 
 		assert.Equal(t, types.Int(SETINT), rawRecordPage.GetInt(0), "ログレコードの種類は SETINT であるべき")
-		tpos := file.Int32ByteSize
+		tpos := constants.Int32ByteSize
 		assert.Equal(t, types.Int(2), rawRecordPage.GetInt(tpos), "トランザクション番号は 2 であるべき")
-		fpos := tpos + file.Int32ByteSize
+		fpos := tpos + constants.Int32ByteSize
 		assert.Equal(t, testBlockID.Filename, rawRecordPage.GetString(fpos), "ファイル名は test_recovery_manager.data であるべき")
 		bpos := fpos + file.MaxLength(util.Len(testBlockID.Filename))
 		assert.Equal(t, testBlockID.Blknum, rawRecordPage.GetInt(bpos), "ブロック番号は 0 であるべき")
-		opos := bpos + file.Int32ByteSize
+		opos := bpos + constants.Int32ByteSize
 		assert.Equal(t, types.Int(2), rawRecordPage.GetInt(opos), "オフセットは 2 であるべき")
-		vpos := opos + file.Int32ByteSize
+		vpos := opos + constants.Int32ByteSize
 		assert.Equal(t, types.Int(oldValue), rawRecordPage.GetInt(vpos), "古い値は 79 であるべき")
 
-		expectedRecordSize := types.Int(50) // vpos + file.Int32ByteSize
+		expectedRecordSize := types.Int(50) // vpos + constants.Int32ByteSize
 		assert.Equal(t, expectedRecordSize, util.Len(rawRecord), "ログレコードのサイズは 50 であるべき")
 
 		// constructor の検証
@@ -162,15 +163,15 @@ func TestRecoveryManagerSetString(t *testing.T) {
 		rawRecordPage := file.NewPageFrom(rawRecord)
 
 		assert.Equal(t, types.Int(SETSTRING), rawRecordPage.GetInt(0), "ログレコードの種類は SETSTRING であるべき")
-		tpos := file.Int32ByteSize
+		tpos := constants.Int32ByteSize
 		assert.Equal(t, types.Int(3), rawRecordPage.GetInt(tpos), "トランザクション番号は 3 であるべき")
-		fpos := tpos + file.Int32ByteSize
+		fpos := tpos + constants.Int32ByteSize
 		assert.Equal(t, testBlockID.Filename, rawRecordPage.GetString(fpos), "ファイル名は test_recovery_manager.data であるべき")
 		bpos := fpos + file.MaxLength(util.Len(testBlockID.Filename))
 		assert.Equal(t, testBlockID.Blknum, rawRecordPage.GetInt(bpos), "ブロック番号は 1 であるべき")
-		opos := bpos + file.Int32ByteSize
+		opos := bpos + constants.Int32ByteSize
 		assert.Equal(t, types.Int(3), rawRecordPage.GetInt(opos), "オフセットは 3 であるべき")
-		vpos := opos + file.Int32ByteSize
+		vpos := opos + constants.Int32ByteSize
 		assert.Equal(t, oldValue, rawRecordPage.GetString(vpos), "古い値は orange-kyoto であるべき")
 
 		expectedRecordSize := types.Int(62) // 26(test_recovery_manager.data) + 4 + 12(orange-kyoto) + 4 + 4 * 4 = 62
@@ -318,7 +319,7 @@ func TestRecoveryManagerCommit(t *testing.T) {
 		commitRecordPage := file.NewPageFrom(commitRecordBytes)
 		commitRecord := NewCommitRecord(commitRecordPage)
 		assert.Equal(t, types.Int(COMMIT), commitRecordPage.GetInt(0), "COMMIT レコードであるべき")
-		assert.Equal(t, types.Int(4), commitRecordPage.GetInt(file.Int32ByteSize), "COMMIT レコードのトランザクション番号は 4 であるべき")
+		assert.Equal(t, types.Int(4), commitRecordPage.GetInt(constants.Int32ByteSize), "COMMIT レコードのトランザクション番号は 4 であるべき")
 		assert.Equal(t, types.TransactionNumber(4), commitRecord.GetTransactionNumber(), "COMMIT レコードのトランザクション番号は 4 であるべき")
 
 		// 他のレコードが書き込まれていることも簡易的に確認する. バイト列自体の検証はしない.

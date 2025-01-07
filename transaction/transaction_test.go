@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"simple-db-go/buffer"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -211,18 +212,18 @@ func TestTransactionRollback(t *testing.T) {
 		boundary := latestLogPage.GetInt(0)
 		lastLog := log.RawLogRecord(latestLogPage.GetBytes(boundary))
 
-		actualCommitLogRecordOffset := boundary + (file.Int32ByteSize + util.Len(lastLog))
+		actualCommitLogRecordOffset := boundary + (constants.Int32ByteSize + util.Len(lastLog))
 		secondLastLog := log.RawLogRecord(latestLogPage.GetBytes(actualCommitLogRecordOffset))
 
 		rollbackLogRecordSize := types.Int(8)
 		expectedRollbackLogRecord := file.NewPage(rollbackLogRecordSize)
 		expectedRollbackLogRecord.SetInt(0, types.Int(ROLLBACK))
-		expectedRollbackLogRecord.SetInt(file.Int32ByteSize, types.Int(transaction1.transactionNumber))
+		expectedRollbackLogRecord.SetInt(constants.Int32ByteSize, types.Int(transaction1.transactionNumber))
 
 		commitLogRecordSize := types.Int(8)
 		expectedCommitLogRecord := file.NewPage(commitLogRecordSize)
 		expectedCommitLogRecord.SetInt(0, types.Int(COMMIT))
-		expectedCommitLogRecord.SetInt(file.Int32ByteSize, types.Int(transaction2.transactionNumber))
+		expectedCommitLogRecord.SetInt(constants.Int32ByteSize, types.Int(transaction2.transactionNumber))
 
 		assert.Equal(t, log.RawLogRecord(expectedRollbackLogRecord.Data), lastLog, "Rollback のログが最後に記録されている.")
 		assert.Equal(t, log.RawLogRecord(expectedCommitLogRecord.Data), secondLastLog, "Commit のログが最後から2番目に記録されている.")

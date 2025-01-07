@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -32,20 +33,20 @@ type SetIntRecord struct {
 * 7つ目：書き込む新しい値
 */
 func NewSetIntRecord(page *file.Page) *SetIntRecord {
-	tpos := file.Int32ByteSize
+	tpos := constants.Int32ByteSize
 	txNum := types.TransactionNumber(page.GetInt(tpos))
 
-	fpos := tpos + file.Int32ByteSize
+	fpos := tpos + constants.Int32ByteSize
 	filename := page.GetString(fpos)
 
 	bpos := fpos + file.MaxLength(util.Len(filename))
 	blockNumber := page.GetInt(bpos)
 	blockID := file.NewBlockID(filename, blockNumber)
 
-	opos := bpos + file.Int32ByteSize
+	opos := bpos + constants.Int32ByteSize
 	offset := page.GetInt(opos)
 
-	vpos := opos + file.Int32ByteSize
+	vpos := opos + constants.Int32ByteSize
 	oldValue := page.GetInt(vpos)
 
 	return &SetIntRecord{
@@ -88,12 +89,12 @@ func WriteSetIntRecord(
 	offset types.Int,
 	oldValue types.Int,
 ) log.LSN {
-	tpos := file.Int32ByteSize
-	fpos := tpos + file.Int32ByteSize
+	tpos := constants.Int32ByteSize
+	fpos := tpos + constants.Int32ByteSize
 	bpos := fpos + file.MaxLength(util.Len(blockID.Filename))
-	opos := bpos + file.Int32ByteSize
-	vpos := opos + file.Int32ByteSize
-	recordLength := vpos + file.Int32ByteSize // value が int32. つまり 4bytes.
+	opos := bpos + constants.Int32ByteSize
+	vpos := opos + constants.Int32ByteSize
+	recordLength := vpos + constants.Int32ByteSize // value が int32. つまり 4bytes.
 
 	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)

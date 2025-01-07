@@ -2,6 +2,7 @@ package file
 
 import (
 	"encoding/binary"
+	"simple-db-go/constants"
 	"simple-db-go/types"
 )
 
@@ -23,7 +24,7 @@ func (p *Page) GetInt(offset types.Int) types.Int {
 
 func (p *Page) GetBytes(offset types.Int) []byte {
 	length := p.GetInt(offset)
-	blobOffset := offset + Int32ByteSize
+	blobOffset := offset + constants.Int32ByteSize
 
 	data := make([]byte, length)
 	copy(data, p.Data[blobOffset:blobOffset+length])
@@ -37,7 +38,7 @@ func (p *Page) SetInt(offset types.Int, newData types.Int) {
 
 func (p *Page) SetBytes(offset types.Int, newData []byte) {
 	p.SetInt(offset, types.Int(len(newData)))
-	blobOffset := offset + Int32ByteSize
+	blobOffset := offset + constants.Int32ByteSize
 	copy(p.Data[blobOffset:], newData)
 }
 
@@ -53,5 +54,5 @@ func (p *Page) SetString(offset types.Int, newData string) {
 }
 
 func MaxLength(strlen types.Int) types.Int {
-	return Int32ByteSize + strlen*CharByteSize
+	return constants.Int32ByteSize + strlen*constants.CharByteSize
 }

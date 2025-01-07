@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
 )
@@ -118,12 +119,12 @@ func (lm *LogManager) append(logRecord RawLogRecord) LSN {
 	var boundary types.Int
 	boundary = lm.logPage.GetInt(0)
 	recordSize := types.Int(len(logRecord))
-	bytesNeeded := recordSize + file.Int32ByteSize
+	bytesNeeded := recordSize + constants.Int32ByteSize
 
 	// 新しく必要になるバイト数(bytesNeeded) = 4 + len(logRecord)
 	// 今 Log Page で空いているバイト数 = boundary - 4
 	// logRecordがそのままPageに収まる条件: boundary - 4 >= bytesNeeded
-	if boundary-file.Int32ByteSize < bytesNeeded {
+	if boundary-constants.Int32ByteSize < bytesNeeded {
 		// Log Page に収まらない場合の処理
 		lm.flush()                              // ディスクに書き込んで、
 		lm.currentBlockID = lm.appendNewBlock() // 新しいブロックで Log Page を更新する.
@@ -211,7 +212,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 			logRecord := page.GetBytes(currentPosition)
 			fmt.Printf("--- logRecord: %+v (%s), address: %p ---\n", logRecord, string(logRecord), &logRecord)
 			// 現在位置を更新する
-			currentPosition += file.Int32ByteSize + types.Int(len(logRecord))
+			currentPosition += constants.Int32ByteSize + types.Int(len(logRecord))
 			fmt.Printf("new currentPosition: %d\n", currentPosition)
 
 			logChan <- logRecord

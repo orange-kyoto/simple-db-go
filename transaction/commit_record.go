@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -22,7 +23,7 @@ type CommitRecord struct {
 * 2つ目：トランザクション番号
 */
 func NewCommitRecord(page *file.Page) *CommitRecord {
-	tpos := file.Int32ByteSize
+	tpos := constants.Int32ByteSize
 	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &CommitRecord{
@@ -50,8 +51,8 @@ func (cr *CommitRecord) ToString() string {
 }
 
 func WriteCommitRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
-	tpos := file.Int32ByteSize
-	recordLength := tpos + file.Int32ByteSize
+	tpos := constants.Int32ByteSize
+	recordLength := tpos + constants.Int32ByteSize
 
 	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)

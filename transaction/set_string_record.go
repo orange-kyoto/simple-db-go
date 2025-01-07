@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -34,20 +35,20 @@ type SetStringRecord struct {
 おそらく、今回の実装では undo-only をやるため、7つ目の新しい値は使わない.
 */
 func NewSetStringRecord(page *file.Page) *SetStringRecord {
-	tpos := file.Int32ByteSize
+	tpos := constants.Int32ByteSize
 	txNum := types.TransactionNumber(page.GetInt(tpos))
 
-	fpos := tpos + file.Int32ByteSize
+	fpos := tpos + constants.Int32ByteSize
 	filename := page.GetString(fpos)
 
 	bpos := fpos + file.MaxLength(util.Len(filename))
 	blockNumber := page.GetInt(bpos)
 	blockID := file.NewBlockID(filename, blockNumber)
 
-	opos := bpos + file.Int32ByteSize
+	opos := bpos + constants.Int32ByteSize
 	offset := page.GetInt(opos)
 
-	vpos := opos + file.Int32ByteSize
+	vpos := opos + constants.Int32ByteSize
 	oldValue := page.GetString(vpos)
 
 	return &SetStringRecord{
@@ -90,11 +91,11 @@ func WriteSetStringRecord(
 	offset types.Int,
 	oldValue string,
 ) log.LSN {
-	tpos := file.Int32ByteSize
-	fpos := tpos + file.Int32ByteSize
+	tpos := constants.Int32ByteSize
+	fpos := tpos + constants.Int32ByteSize
 	bpos := fpos + file.MaxLength(util.Len(blockID.Filename))
-	opos := bpos + file.Int32ByteSize
-	vpos := opos + file.Int32ByteSize
+	opos := bpos + constants.Int32ByteSize
+	vpos := opos + constants.Int32ByteSize
 	recordLength := vpos + file.MaxLength(util.Len(oldValue))
 
 	rawLogRecord := make([]byte, recordLength)
