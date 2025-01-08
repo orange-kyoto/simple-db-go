@@ -72,9 +72,7 @@ func (ts *TableScan) Next() bool {
 
 // current record を指定された RecordID に移動する.
 func (ts *TableScan) MoveToRecordID(recordID RecordID) {
-	ts.Close()
-	blockID := file.NewBlockID(ts.fileName, recordID.blockNumber)
-	ts.recordPage = NewRecordPage(ts.transaction, *blockID, ts.layout)
+	ts.moveToBlock(recordID.blockNumber)
 	ts.currentSlotNumber = recordID.slotNumber
 }
 
@@ -124,21 +122,28 @@ func (ts *TableScan) SetString(fieldName FieldName, val string) {
 
 // 現在の RecordID を返す.
 func (ts *TableScan) GetCurrentRecordID() RecordID {
-	return NewRecordID(ts.recordPage.GetBlockID().BlockNumber, ts.currentSlotNumber)
+	blockNumber := ts.recordPage.GetBlockID().BlockNumber
+	return NewRecordID(blockNumber, ts.currentSlotNumber)
 }
 
 // current record の現在のスロットを削除する（EMPTYにする）.
 func (ts *TableScan) Delete() {
-	ts.recordPage.Delete(ts.currentSlotNumber)
+	if ts.currentSlotNumber != NULL_SLOT_NUMBER {
+		ts.recordPage.Delete(ts.currentSlotNumber)
+	}
 }
-
-// private methods
 
 // 指定したブロック番号に移動する.
 // current_slot_number は`-1`にリセットする. そのブロックの最初のレコードの直前、ということになる.
 func (ts *TableScan) moveToBlock(blockNumber types.BlockNumber) {
 	ts.Close()
 	blockID := file.NewBlockID(ts.fileName, blockNumber)
+
+	// おそらく書籍では pin が漏れていると思われる.
+	// TableScan のクライアントからはもう Block, Buffer などは完全に隠蔽したいのでここで実施する.
+	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
+	ts.transaction.Pin(blockID)
+
 	ts.recordPage = NewRecordPage(ts.transaction, *blockID, ts.layout)
 	ts.currentSlotNumber = NULL_SLOT_NUMBER
 }
@@ -152,6 +157,12 @@ func (ts *TableScan) moveToNextBlock() {
 func (ts *TableScan) moveToNewBlock() {
 	ts.Close()
 	blockID := ts.transaction.Append(ts.fileName)
+
+	// おそらく書籍では pin が漏れていると思われる.
+	// TableScan のクライアントからはもう Block, Buffer などは完全に隠蔽したいのでここで実施する.
+	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
+	ts.transaction.Pin(blockID)
+
 	ts.recordPage = NewRecordPage(ts.transaction, *blockID, ts.layout)
 	// 新しく追加されたまっさらなブロックに追加していきたいので、初期化する.
 	ts.recordPage.Format()

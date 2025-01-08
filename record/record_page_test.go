@@ -1,73 +1,22 @@
 package record
 
 import (
-	"os"
-	"simple-db-go/buffer"
-	"simple-db-go/file"
-	"simple-db-go/log"
-	"simple-db-go/transaction"
+	"simple-db-go/test_util"
 	"simple-db-go/types"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	fileManager   *file.FileManager
-	logManager    *log.LogManager
-	bufferManager *buffer.BufferManager
-	mu            sync.Mutex
-)
-
-func startManagers() {
-	mu.Lock()
-	defer mu.Unlock()
-
-	if fileManager == nil {
-		fileManager = file.NewFileManager("test_record_page", 512)
-	}
-	if logManager == nil {
-		logManager = log.NewLogManager(fileManager, "test_record_page.log")
-	}
-	if bufferManager == nil {
-		bufferManager = buffer.NewBufferManager(fileManager, logManager, 10)
-	}
-}
-
-func cleanup() {
-	os.RemoveAll("test_record_page")
-}
-
-func TestMain(m *testing.M) {
-	cleanup()
-	code := m.Run()
-	cleanup()
-	os.Exit(code)
-}
-
-func startNewTransaction() *transaction.Transaction {
-	startManagers()
-	return transaction.NewTransaction(fileManager, logManager, bufferManager)
-}
-
-func buildTestSchema() *Schema {
-	schema := NewSchema()
-	schema.AddIntField("id")
-	schema.AddStringField("name", 10)
-	schema.AddIntField("age")
-	return schema
-}
-
 func TestRecordPageFormat(t *testing.T) {
-	transaction := startNewTransaction()
+	transaction := test_util.StartNewTransaction(recordPageTestName)
 
 	fileName := "test_record_page_format.table"
 	blockID := transaction.Append(fileName)
 	transaction.Pin(blockID)
 	defer transaction.Unpin(blockID)
 
-	schema := buildTestSchema()
+	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
 	recordPage := NewRecordPage(transaction, *blockID, layout)
@@ -75,7 +24,7 @@ func TestRecordPageFormat(t *testing.T) {
 
 	t.Run("全てのスロットが初期値で初期化されている.", func(t *testing.T) {
 		blockSize := types.Int(512)
-		slotSize := types.Int(4 + 4 + (4 + 10) + 4) // 30
+		slotSize := types.Int(4 + 4 + (4 + 10) + 4) // 26
 
 		slotNumber := SlotNumber(0)
 		for ; types.Int(slotNumber+1)*slotSize < blockSize; slotNumber++ {
@@ -96,7 +45,7 @@ func TestRecordPageFormat(t *testing.T) {
 			assert.Equalf(t, types.Int(0), recordPage.GetInt(slotNumber, "age"), "slot %d's age is 0", slotNumber)
 		}
 
-		// 512 / 30 = 17.06666666666 = 17個スロットがあるはず.
+		// 512 / 26 = 19.692... = 19個スロットがあるはず.
 		// slot_number は 0 から始まる.
 		expectedSlotNumber := SlotNumber(18)
 		assert.Equal(t, expectedSlotNumber, slotNumber-1, "slot number should be 18.") // ループ終了時には1つ余分にインクリメントされているため、-1 する.
@@ -104,14 +53,14 @@ func TestRecordPageFormat(t *testing.T) {
 }
 
 func TestRecordPageFindUsedSlotAfter(t *testing.T) {
-	transaction := startNewTransaction()
+	transaction := test_util.StartNewTransaction(recordPageTestName)
 
 	fileName := "test_record_page_find_used_slot_after.table"
 	blockID := transaction.Append(fileName)
 	transaction.Pin(blockID)
 	defer transaction.Unpin(blockID)
 
-	schema := buildTestSchema()
+	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
 	recordPage := NewRecordPage(transaction, *blockID, layout)
@@ -142,14 +91,14 @@ func TestRecordPageFindUsedSlotAfter(t *testing.T) {
 }
 
 func TestRecordPageFindEmptySlotAfter(t *testing.T) {
-	transaction := startNewTransaction()
+	transaction := test_util.StartNewTransaction(recordPageTestName)
 
 	fileName := "test_record_page_find_empty_slot_after.table"
 	blockID := transaction.Append(fileName)
 	transaction.Pin(blockID)
 	defer transaction.Unpin(blockID)
 
-	schema := buildTestSchema()
+	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
 	recordPage := NewRecordPage(transaction, *blockID, layout)
@@ -180,14 +129,14 @@ func TestRecordPageFindEmptySlotAfter(t *testing.T) {
 }
 
 func TestRecordPageDelete(t *testing.T) {
-	transaction := startNewTransaction()
+	transaction := test_util.StartNewTransaction(recordPageTestName)
 
 	fileName := "test_record_page_delete.table"
 	blockID := transaction.Append(fileName)
 	transaction.Pin(blockID)
 	defer transaction.Unpin(blockID)
 
-	schema := buildTestSchema()
+	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
 	recordPage := NewRecordPage(transaction, *blockID, layout)

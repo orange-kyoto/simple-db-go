@@ -45,7 +45,7 @@ func (bl *BufferList) Unpin(blockID *file.BlockID) {
 }
 
 func (bl *BufferList) UnpinAll() {
-	for blockID := range bl.pins {
+	for blockID := range bl.buffers {
 		buffer := bl.buffers[blockID]
 		bl.bufferManager.Unpin(buffer)
 	}
