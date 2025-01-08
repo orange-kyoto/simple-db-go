@@ -31,7 +31,7 @@ func TestTableScanInitialization(t *testing.T) {
 		expectedFileByteSize := int64(512) // block size  と同じ.
 		assert.Equal(t, expectedFileByteSize, fileInfo.Size(), "file size should be 512 bytes.")
 
-		expectedBlockID := *file.NewBlockID(fileName, 0)
+		expectedBlockID := file.NewBlockID(fileName, 0)
 		assert.Equal(t, expectedBlockID, tableScan.recordPage.GetBlockID(), "current block should be 0.")
 
 		expectedSlotNumber := NULL_SLOT_NUMBER
@@ -56,7 +56,7 @@ func TestTableScanInitialization(t *testing.T) {
 		tableScan := NewTableScan(transaction, tableName, layout)
 
 		assert.Equal(t, types.Int(2), fileManager.GetBlockLength(fileName), "TableScan 初期化後もブロックサイズは2のまま.")
-		assert.Equal(t, *testBlockIDs[0], tableScan.recordPage.GetBlockID(), "testBlockID1 が current block になる.")
+		assert.Equal(t, testBlockIDs[0], tableScan.recordPage.GetBlockID(), "testBlockID1 が current block になる.")
 		assert.Equal(t, NULL_SLOT_NUMBER, tableScan.currentSlotNumber, "current slot number should be NULL_SLOT_NUMBER.")
 	})
 }
@@ -104,14 +104,14 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 		recordID1 := NewRecordID(types.BlockNumber(1), SlotNumber(2))
 		tableScan.MoveToRecordID(recordID1)
 
-		assert.Equal(t, *testBlocks[1], tableScan.recordPage.GetBlockID(), "current block は testBlocks[1]であるべし.")
+		assert.Equal(t, testBlocks[1], tableScan.recordPage.GetBlockID(), "current block は testBlocks[1]であるべし.")
 		assert.Equal(t, SlotNumber(2), tableScan.currentSlotNumber, "current slot number は 2 であるべし.")
 		assert.Equal(t, recordID1, tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 
 		recordID2 := NewRecordID(types.BlockNumber(2), SlotNumber(5))
 		tableScan.MoveToRecordID(recordID2)
 
-		assert.Equal(t, *testBlocks[2], tableScan.recordPage.GetBlockID(), "current block は testBlocks[2]であるべし.")
+		assert.Equal(t, testBlocks[2], tableScan.recordPage.GetBlockID(), "current block は testBlocks[2]であるべし.")
 		assert.Equal(t, SlotNumber(5), tableScan.currentSlotNumber, "current slot number は 5 であるべし.")
 		assert.Equal(t, recordID2, tableScan.GetCurrentRecordID(), "current record id は recordID2 であるべし.")
 	})

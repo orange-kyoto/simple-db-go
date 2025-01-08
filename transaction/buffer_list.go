@@ -25,22 +25,22 @@ func NewBufferList(bm *buffer.BufferManager) *BufferList {
 	}
 }
 
-func (bl *BufferList) GetBuffer(blockID *file.BlockID) *buffer.Buffer {
-	return bl.buffers[*blockID]
+func (bl *BufferList) GetBuffer(blockID file.BlockID) *buffer.Buffer {
+	return bl.buffers[blockID]
 }
 
-func (bl *BufferList) Pin(blockID *file.BlockID) {
+func (bl *BufferList) Pin(blockID file.BlockID) {
 	buffer := bl.bufferManager.Pin(blockID)
-	bl.buffers[*blockID] = buffer
-	bl.pins[*blockID] += 1
+	bl.buffers[blockID] = buffer
+	bl.pins[blockID] += 1
 }
 
-func (bl *BufferList) Unpin(blockID *file.BlockID) {
-	buffer := bl.buffers[*blockID]
+func (bl *BufferList) Unpin(blockID file.BlockID) {
+	buffer := bl.buffers[blockID]
 	bl.bufferManager.Unpin(buffer)
-	bl.pins[*blockID] -= 1
-	if bl.pins[*blockID] == 0 {
-		delete(bl.buffers, *blockID)
+	bl.pins[blockID] -= 1
+	if bl.pins[blockID] == 0 {
+		delete(bl.buffers, blockID)
 	}
 }
 

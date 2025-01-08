@@ -50,7 +50,7 @@ type FileRequest interface {
 }
 
 type ReadFileRequest struct {
-	blockID   *BlockID
+	blockID   BlockID
 	page      *Page
 	errorChan chan error
 }
@@ -75,7 +75,7 @@ func (rfr *ReadFileRequest) handleError(err error) {
 }
 
 type WriteFileRequest struct {
-	blockID   *BlockID
+	blockID   BlockID
 	page      *Page
 	errorChan chan error
 }
@@ -105,7 +105,7 @@ func (wfr *WriteFileRequest) handleError(err error) {
 
 type AppendFileRequest struct {
 	fileName  string
-	replyChan chan *BlockID
+	replyChan chan BlockID
 	errorChan chan error
 }
 
@@ -147,7 +147,7 @@ func (afr *AppendFileRequest) resolve(f *os.File, fm *FileManager) {
 
 func (afr *AppendFileRequest) handleError(err error) {
 	afr.errorChan <- err
-	afr.replyChan <- nil
+	// afr.replyChan <- nil
 }
 
 type GetBlockLength struct {
@@ -248,7 +248,7 @@ func (fm *FileManager) run() {
 	}
 }
 
-func (fm *FileManager) Read(blockID *BlockID, page *Page) {
+func (fm *FileManager) Read(blockID BlockID, page *Page) {
 	req := &ReadFileRequest{
 		blockID:   blockID,
 		page:      page,
@@ -262,7 +262,7 @@ func (fm *FileManager) Read(blockID *BlockID, page *Page) {
 	}
 }
 
-func (fm *FileManager) Write(blockID *BlockID, page *Page) {
+func (fm *FileManager) Write(blockID BlockID, page *Page) {
 	req := &WriteFileRequest{
 		blockID:   blockID,
 		page:      page,
@@ -276,10 +276,10 @@ func (fm *FileManager) Write(blockID *BlockID, page *Page) {
 }
 
 // ファイルに新しくブロックを追加する。追加された分のブロックはまだ空。
-func (fm *FileManager) Append(fileName string) *BlockID {
+func (fm *FileManager) Append(fileName string) BlockID {
 	req := &AppendFileRequest{
 		fileName:  fileName,
-		replyChan: make(chan *BlockID),
+		replyChan: make(chan BlockID),
 		errorChan: make(chan error),
 	}
 	fm.requestChan <- req

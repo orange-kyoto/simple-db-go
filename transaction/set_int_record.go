@@ -14,7 +14,7 @@ type SetIntRecord struct {
 	offset            types.Int
 	// ログレコードに記録された、その操作における変更前の値
 	oldValue types.Int
-	blockID  *file.BlockID
+	blockID  file.BlockID
 }
 
 /*
@@ -85,7 +85,7 @@ func (sir *SetIntRecord) ToString() string {
 func WriteSetIntRecord(
 	logManager *log.LogManager,
 	txNum types.TransactionNumber,
-	blockID *file.BlockID,
+	blockID file.BlockID,
 	offset types.Int,
 	oldValue types.Int,
 ) log.LSN {

@@ -29,7 +29,7 @@ type LogManager struct {
 	logPage *file.Page
 
 	// 現在 Log Page に読み込んでいる BlockID
-	currentBlockID *file.BlockID
+	currentBlockID file.BlockID
 
 	// 最新の LSN (ディスクには書き込まれていないかもしれないが、少なくともLog Page上にはある)
 	latestLSN LSN
@@ -48,14 +48,13 @@ func NewLogManager(fm *file.FileManager, logFileName string) *LogManager {
 	logSize := fm.GetBlockLength(logFileName)
 
 	lm := &LogManager{
-		fileManager:    fm,
-		logFileName:    logFileName,
-		currentBlockID: nil,
-		logPage:        logPage,
-		latestLSN:      0,
-		lastSavedLSN:   0,
-		requestChan:    make(chan AppendRequest),
-		closeChan:      make(chan bool),
+		fileManager:  fm,
+		logFileName:  logFileName,
+		logPage:      logPage,
+		latestLSN:    0,
+		lastSavedLSN: 0,
+		requestChan:  make(chan AppendRequest),
+		closeChan:    make(chan bool),
 	}
 
 	if logSize == 0 {
@@ -140,7 +139,7 @@ func (lm *LogManager) append(logRecord RawLogRecord) LSN {
 
 // ログファイルの末尾に新しくブロックを１つ追加する
 // その際にブロックサイズを Log Page の先頭に付与する(boundary)
-func (lm *LogManager) appendNewBlock() *file.BlockID {
+func (lm *LogManager) appendNewBlock() file.BlockID {
 	appendedBlockID := lm.fileManager.Append(lm.logFileName)
 	boundary := lm.fileManager.BlockSize()
 	lm.logPage.SetInt(0, boundary)
@@ -176,7 +175,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 
 	// 指定したブロックに移動する. boundary, currentPosition は最新のレコードの位置を示す.
 	// ログレコードはブロック内で右から左に書き込まれることに注意.
-	moveToBlock := func(destBlockID *file.BlockID) {
+	moveToBlock := func(destBlockID file.BlockID) {
 		lm.fileManager.Read(destBlockID, page)
 		currentPosition = page.GetInt(0)
 	}

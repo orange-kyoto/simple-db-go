@@ -19,7 +19,7 @@ func TestRecordPageFormat(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	recordPage := NewRecordPage(transaction, *blockID, layout)
+	recordPage := NewRecordPage(transaction, blockID, layout)
 	recordPage.Format()
 
 	t.Run("全てのスロットが初期値で初期化されている.", func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestRecordPageFindUsedSlotAfter(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	recordPage := NewRecordPage(transaction, *blockID, layout)
+	recordPage := NewRecordPage(transaction, blockID, layout)
 	recordPage.Format()
 
 	t.Run("全て空きスロットの場合、常にスロット番号が NULL を返す.", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestRecordPageFindEmptySlotAfter(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	recordPage := NewRecordPage(transaction, *blockID, layout)
+	recordPage := NewRecordPage(transaction, blockID, layout)
 	recordPage.Format()
 
 	t.Run("全て空きスロットの場合、常に次のスロット番号が返る. ただし、最後のスロットから探索した場合はNULLになる.", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestRecordPageDelete(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	recordPage := NewRecordPage(transaction, *blockID, layout)
+	recordPage := NewRecordPage(transaction, blockID, layout)
 	recordPage.Format()
 
 	t.Run("Delete実行後のスロットが FindUsedSlotAfter で返されないこと.", func(t *testing.T) {

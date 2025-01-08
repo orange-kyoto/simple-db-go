@@ -23,7 +23,7 @@ func testLogFilePath() string {
 }
 
 func cleanLogFile() {
-	os.Remove(testLogFilePath())
+	os.RemoveAll(testDir)
 }
 
 var logManager *LogManager

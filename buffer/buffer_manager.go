@@ -7,8 +7,6 @@ import (
 	"simple-db-go/log"
 	"simple-db-go/types"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 const bufferPinWaitThreshold = constants.WAIT_THRESHOLD
@@ -100,7 +98,7 @@ func (bm *BufferManager) Unpin(buffer *Buffer) {
 	<-replyChan
 }
 
-func (bm *BufferManager) Pin(blockID *file.BlockID) *Buffer {
+func (bm *BufferManager) Pin(blockID file.BlockID) *Buffer {
 	fmt.Printf("Call Pin. bm.numAvailable=%d, blockID=%+v\n", bm.numAvailable, blockID)
 	replyChan := make(chan *Buffer)
 	waitChan := make(chan bool)
@@ -212,7 +210,7 @@ func (bm *BufferManager) notifyAll() {
 }
 
 type PinRequest struct {
-	blockID   *file.BlockID
+	blockID   file.BlockID
 	replyChan chan *Buffer
 	// 空いているバッファーがない場合に待つための channel
 	waitChan chan bool
@@ -234,7 +232,7 @@ func (pr *PinRequest) resolve(bm *BufferManager) {
 	return
 }
 
-func (bm *BufferManager) tryToPin(blockID *file.BlockID) *Buffer {
+func (bm *BufferManager) tryToPin(blockID file.BlockID) *Buffer {
 	buffer := bm.findExistngBuffer(blockID)
 	if buffer == nil {
 		buffer = bm.chooseUnpinnedBuffer()
@@ -255,10 +253,10 @@ func (bm *BufferManager) tryToPin(blockID *file.BlockID) *Buffer {
 	return buffer
 }
 
-func (bm *BufferManager) findExistngBuffer(blockID *file.BlockID) *Buffer {
+func (bm *BufferManager) findExistngBuffer(blockID file.BlockID) *Buffer {
 	// TODO: これO(1)に改善できそう
 	for _, buffer := range bm.bufferPool {
-		if cmp.Equal(buffer.GetBlockID(), blockID) {
+		if buffer.GetBlockID() == blockID {
 			return buffer
 		}
 	}

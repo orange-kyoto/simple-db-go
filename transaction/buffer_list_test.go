@@ -38,7 +38,7 @@ func TestPinUnpinBuffers(t *testing.T) {
 		bufferList.Pin(blockID1)
 		buffer1 := bufferList.GetBuffer(blockID1)
 		assert.NotNil(t, buffer1, "Pin できるのでバッファーが取得できる.")
-		assert.Equal(t, types.Int(1), bufferList.pins[*blockID1], "Pin できるので pins には 1 が格納されている.")
+		assert.Equal(t, types.Int(1), bufferList.pins[blockID1], "Pin できるので pins には 1 が格納されている.")
 		assert.True(t, buffer1.IsPinned(), "Pin できるのでバッファーはピンされている.")
 
 		// もう一度 Pin した時に、同じバファーにPinされていることを確認する.
@@ -46,7 +46,7 @@ func TestPinUnpinBuffers(t *testing.T) {
 		bufferList.Pin(blockID2)
 		buffer2 := bufferList.GetBuffer(blockID2)
 		assert.Same(t, buffer1, buffer2, "同じブロックに対して Pin すると同じバッファーが返される.")
-		assert.Equal(t, types.Int(2), bufferList.pins[*blockID1], "Pin できるので pins には 2 が格納されている.")
+		assert.Equal(t, types.Int(2), bufferList.pins[blockID1], "Pin できるので pins には 2 が格納されている.")
 		assert.True(t, buffer2.IsPinned(), "Pin できるのでバッファーはピンされている.")
 	})
 
@@ -56,14 +56,14 @@ func TestPinUnpinBuffers(t *testing.T) {
 		bufferList.Unpin(blockID)
 		buffer1 := bufferList.GetBuffer(blockID)
 		assert.NotNil(t, buffer1, "2回 Pin した後に1回 Unpin してもバッファーは取得できる.")
-		assert.Equal(t, types.Int(1), bufferList.pins[*blockID], "2回 Pin した後に1回 Unpin すると pins には 1 が格納されている.")
+		assert.Equal(t, types.Int(1), bufferList.pins[blockID], "2回 Pin した後に1回 Unpin すると pins には 1 が格納されている.")
 		assert.True(t, buffer1.IsPinned(), "2回 Pin した後に1回 Unpin するとバッファーはピンされている.")
 
 		// もう一度 Unpin した時に、バッファーが削除されることを確認する.
 		bufferList.Unpin(blockID)
 		buffer2 := bufferList.GetBuffer(blockID)
 		assert.Nil(t, buffer2, "2回 Pin した後に2回 Unpin するとバッファーは取得できない.")
-		assert.Equal(t, types.Int(0), bufferList.pins[*blockID], "2回 Pin した後に2回 Unpin すると pins には 0 が格納されている.")
+		assert.Equal(t, types.Int(0), bufferList.pins[blockID], "2回 Pin した後に2回 Unpin すると pins には 0 が格納されている.")
 		assert.False(t, buffer1.IsPinned(), "2回 Pin した後に2回 Unpin するとバッファーはピンされていない.")
 	})
 

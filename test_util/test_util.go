@@ -97,8 +97,8 @@ func Cleanup(path string) {
 
 // 指定した個数分の BlockID を用意する.
 // BlockNumber は 0 から始まる連番.
-func PrepareBlockIDs(num types.Int, fileName string) []*file.BlockID {
-	result := make([]*file.BlockID, num)
+func PrepareBlockIDs(num types.Int, fileName string) []file.BlockID {
+	result := make([]file.BlockID, num)
 
 	for i := types.Int(0); i < num; i++ {
 		result[i] = file.NewBlockID(fileName, types.BlockNumber(i))

@@ -15,7 +15,7 @@ func TestConcurrencyManagerLock(t *testing.T) {
 		blockID := file.NewBlockID("test_concurrency_manager_1", 0)
 		cm.SLock(blockID)
 
-		lockType, exists := cm.locks[*blockID]
+		lockType, exists := cm.locks[blockID]
 		assert.Equal(t, sLOCK, lockType, "SLock は成功するので locks に要素が存在するべき.")
 		assert.True(t, exists, "SLock は成功するので locks に要素が存在するべき.")
 	})
@@ -26,7 +26,7 @@ func TestConcurrencyManagerLock(t *testing.T) {
 		blockID := file.NewBlockID("test_concurrency_manager_2", 0)
 		cm.XLock(blockID)
 
-		_, exists := cm.locks[*blockID]
+		_, exists := cm.locks[blockID]
 		if !exists {
 			t.Errorf("XLock は成功するので locks に要素が存在するべき.")
 		}
@@ -99,7 +99,7 @@ func TestConcurrencyManagerLock(t *testing.T) {
 		<-done1
 		<-done2
 
-		lockType, exists := cm2.locks[*blockID]
+		lockType, exists := cm2.locks[blockID]
 		assert.Equal(t, xLOCK, lockType, "他のConcurrencyManager で SLock が獲得されていた際に XLock が解放されると XLock を獲得できる.")
 		assert.True(t, exists, "他のConcurrencyManager で SLock が獲得されていた際に XLock が解放されると XLock を獲得できる.")
 	})

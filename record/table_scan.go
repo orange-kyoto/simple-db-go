@@ -38,7 +38,7 @@ func NewTableScan(transaction *transaction.Transaction, tableName string, layout
 func (ts *TableScan) Close() {
 	if ts.recordPage != nil {
 		blockID := ts.recordPage.GetBlockID()
-		ts.transaction.Unpin(&blockID)
+		ts.transaction.Unpin(blockID)
 	}
 }
 
@@ -144,7 +144,7 @@ func (ts *TableScan) moveToBlock(blockNumber types.BlockNumber) {
 	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
 	ts.transaction.Pin(blockID)
 
-	ts.recordPage = NewRecordPage(ts.transaction, *blockID, ts.layout)
+	ts.recordPage = NewRecordPage(ts.transaction, blockID, ts.layout)
 	ts.currentSlotNumber = NULL_SLOT_NUMBER
 }
 
@@ -163,7 +163,7 @@ func (ts *TableScan) moveToNewBlock() {
 	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
 	ts.transaction.Pin(blockID)
 
-	ts.recordPage = NewRecordPage(ts.transaction, *blockID, ts.layout)
+	ts.recordPage = NewRecordPage(ts.transaction, blockID, ts.layout)
 	// 新しく追加されたまっさらなブロックに追加していきたいので、初期化する.
 	ts.recordPage.Format()
 	ts.currentSlotNumber = NULL_SLOT_NUMBER

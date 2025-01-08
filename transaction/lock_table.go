@@ -62,8 +62,8 @@ func (lt *LockTable) run() {
 	}
 }
 
-func (lt *LockTable) SLock(blockID *file.BlockID) {
-	requestFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
+func (lt *LockTable) SLock(blockID file.BlockID) {
+	requestFunc := func(blockID file.BlockID, replyChan chan bool, waitChan chan bool) {
 		req := &sLockRequest{
 			blockID:   blockID,
 			replyChan: replyChan,
@@ -75,8 +75,8 @@ func (lt *LockTable) SLock(blockID *file.BlockID) {
 	doLockRequest(blockID, requestFunc, "SLOCK")
 }
 
-func (lt *LockTable) XLock(blockID *file.BlockID) {
-	requestFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
+func (lt *LockTable) XLock(blockID file.BlockID) {
+	requestFunc := func(blockID file.BlockID, replyChan chan bool, waitChan chan bool) {
 		req := &xLockRequest{
 			blockID:   blockID,
 			replyChan: replyChan,
@@ -88,8 +88,8 @@ func (lt *LockTable) XLock(blockID *file.BlockID) {
 	doLockRequest(blockID, requestFunc, "XLOCK")
 }
 
-func (lt *LockTable) Unlock(blockID *file.BlockID) {
-	requstFunc := func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool) {
+func (lt *LockTable) Unlock(blockID file.BlockID) {
+	requstFunc := func(blockID file.BlockID, replyChan chan bool, waitChan chan bool) {
 		req := &unlockRequest{
 			blockID:   blockID,
 			replyChan: replyChan,
@@ -101,7 +101,7 @@ func (lt *LockTable) Unlock(blockID *file.BlockID) {
 	doLockRequest(blockID, requstFunc, "UNLOCK")
 }
 
-func doLockRequest(blockID *file.BlockID, requestFunc func(blockID *file.BlockID, replyChan chan bool, waitChan chan bool), reqType string) {
+func doLockRequest(blockID file.BlockID, requestFunc func(blockID file.BlockID, replyChan chan bool, waitChan chan bool), reqType string) {
 	replyChan := make(chan bool)
 	waitChan := make(chan bool)
 	defer close(replyChan)
@@ -134,7 +134,7 @@ type lockTableRequest interface {
 }
 
 type sLockRequest struct {
-	blockID *file.BlockID
+	blockID file.BlockID
 	// 処理が完了したことを知らせるためだけの channel
 	replyChan chan bool
 	// 待ち状態が解除されたことを通知するための channel
@@ -152,12 +152,12 @@ func (slr *sLockRequest) resolve(lockTable *LockTable) {
 	}
 
 	lockValue := lockTable.getLockValue(slr.blockID)
-	lockTable.locks[*slr.blockID] = lockValue + 1
+	lockTable.locks[slr.blockID] = lockValue + 1
 	slr.replyChan <- true
 }
 
 type xLockRequest struct {
-	blockID *file.BlockID
+	blockID file.BlockID
 	// 処理が完了したことを知らせるためだけの channel
 	replyChan chan bool
 	// 待ち状態が解除されたことを通知するための channel
@@ -174,12 +174,12 @@ func (xlr *xLockRequest) resolve(lockTable *LockTable) {
 		return
 	}
 
-	lockTable.locks[*xlr.blockID] = -1
+	lockTable.locks[xlr.blockID] = -1
 	xlr.replyChan <- true
 }
 
 type unlockRequest struct {
-	blockID *file.BlockID
+	blockID file.BlockID
 	// 処理が完了したことを知らせるためだけの channel
 	replyChan chan bool
 	// 待ち状態が解除されたことを通知するための channel
@@ -190,9 +190,9 @@ func (ulr *unlockRequest) resolve(lockTable *LockTable) {
 	lockValue := lockTable.getLockValue(ulr.blockID)
 	newLockValue := lockValue - 1
 	if newLockValue > 0 {
-		lockTable.locks[*ulr.blockID] = newLockValue
+		lockTable.locks[ulr.blockID] = newLockValue
 	} else {
-		delete(lockTable.locks, *ulr.blockID)
+		delete(lockTable.locks, ulr.blockID)
 	}
 
 	// NOTE: 教科書では newLockValue <= 0 となっているが、ここでは newLockValue <= 1 としている.
@@ -204,16 +204,16 @@ func (ulr *unlockRequest) resolve(lockTable *LockTable) {
 	ulr.replyChan <- true
 }
 
-func (lt *LockTable) hasXLock(blockID *file.BlockID) bool {
+func (lt *LockTable) hasXLock(blockID file.BlockID) bool {
 	return lt.getLockValue(blockID) < 0
 }
 
-func (lt *LockTable) hasOtherSLocks(blockID *file.BlockID) bool {
+func (lt *LockTable) hasOtherSLocks(blockID file.BlockID) bool {
 	return lt.getLockValue(blockID) > 1
 }
 
-func (lt *LockTable) getLockValue(blockID *file.BlockID) LockValue {
-	value, exists := lt.locks[*blockID]
+func (lt *LockTable) getLockValue(blockID file.BlockID) LockValue {
+	value, exists := lt.locks[blockID]
 	if exists {
 		return value
 	} else {

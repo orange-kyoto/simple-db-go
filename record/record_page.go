@@ -27,22 +27,22 @@ func (rp *RecordPage) GetBlockID() file.BlockID {
 
 func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName FieldName) types.Int {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	return rp.transaction.GetInt(&rp.blockID, types.Int(fieldOffset))
+	return rp.transaction.GetInt(rp.blockID, types.Int(fieldOffset))
 }
 
 func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName FieldName) string {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	return rp.transaction.GetString(&rp.blockID, types.Int(fieldOffset))
+	return rp.transaction.GetString(rp.blockID, types.Int(fieldOffset))
 }
 
 func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName FieldName, value types.Int) {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	rp.transaction.SetInt(&rp.blockID, types.Int(fieldOffset), value, true)
+	rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), value, true)
 }
 
 func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName FieldName, value string) {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	rp.transaction.SetString(&rp.blockID, types.Int(fieldOffset), value, true)
+	rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), value, true)
 }
 
 // このレコードページ内の全てのスロットを初期化する.
@@ -51,7 +51,7 @@ func (rp *RecordPage) Format() {
 	for slotNumber := SlotNumber(0); rp.isValidSlot(slotNumber); slotNumber++ {
 		// フラグの初期値を EMPTY に設定する.
 		slotOffset := rp.getSlotOffset(slotNumber)
-		rp.transaction.SetInt(&rp.blockID, types.Int(slotOffset), types.Int(SLOT_EMPTY), false)
+		rp.transaction.SetInt(rp.blockID, types.Int(slotOffset), types.Int(SLOT_EMPTY), false)
 
 		// 各フィールドの初期値を設定する.
 		schema := rp.layout.GetSchema()
@@ -59,11 +59,11 @@ func (rp *RecordPage) Format() {
 			fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 
 			if schema.FieldType(fieldName) == INTEGER {
-				rp.transaction.SetInt(&rp.blockID, types.Int(fieldOffset), types.Int(0), false)
+				rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), types.Int(0), false)
 			}
 
 			if schema.FieldType(fieldName) == VARCHAR {
-				rp.transaction.SetString(&rp.blockID, types.Int(fieldOffset), "", false)
+				rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), "", false)
 			}
 		}
 	}
@@ -93,13 +93,13 @@ func (rp *RecordPage) FindEmptySlotAfter(slotNumber SlotNumber) SlotNumber {
 
 func (rp *RecordPage) setSlotFlag(slotNumber SlotNumber, slotFlag SlotFlag) {
 	slotOffset := rp.getSlotOffset(slotNumber)
-	rp.transaction.SetInt(&rp.blockID, types.Int(slotOffset), types.Int(slotFlag), true)
+	rp.transaction.SetInt(rp.blockID, types.Int(slotOffset), types.Int(slotFlag), true)
 }
 
 func (rp *RecordPage) searchAfter(slotNumber SlotNumber, slotFlag SlotFlag) SlotNumber {
 	for targetSlotNumber := slotNumber + 1; rp.isValidSlot(targetSlotNumber); targetSlotNumber++ {
 		slotOffset := rp.getSlotOffset(targetSlotNumber)
-		if rp.transaction.GetInt(&rp.blockID, types.Int(slotOffset)) == types.Int(slotFlag) {
+		if rp.transaction.GetInt(rp.blockID, types.Int(slotOffset)) == types.Int(slotFlag) {
 			return targetSlotNumber
 		}
 	}

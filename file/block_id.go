@@ -11,8 +11,8 @@ type BlockID struct {
 	BlockNumber types.BlockNumber
 }
 
-func NewBlockID(filename string, blknum types.BlockNumber) *BlockID {
-	return &BlockID{Filename: filename, BlockNumber: blknum}
+func NewBlockID(filename string, blknum types.BlockNumber) BlockID {
+	return BlockID{Filename: filename, BlockNumber: blknum}
 }
 
 func (b BlockID) Equals(other BlockID) bool {
