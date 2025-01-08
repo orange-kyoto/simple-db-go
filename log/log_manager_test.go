@@ -3,6 +3,7 @@ package log
 import (
 	"os"
 	"path/filepath"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
 	"simple-db-go/util"
@@ -22,7 +23,7 @@ func testLogFilePath() string {
 }
 
 func cleanLogFile() {
-	os.Remove(testLogFilePath())
+	os.RemoveAll(testDir)
 }
 
 var logManager *LogManager
@@ -85,13 +86,13 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 
 	t.Run("lm.logPage の先頭４バイトがログレコードのオフセットの位置（boundary）になっていること", func(t *testing.T) {
 		// ログレコードは後ろから書き込むので.
-		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(testRecordBytes))
+		expectedBoundary := blockSize - (constants.Int32ByteSize + util.Len(testRecordBytes))
 		assert.Equal(t, expectedBoundary, logManager.logPage.GetInt(0), "boundary が正しく設定されていること")
 	})
 
 	t.Run("lm.logPage のboundary以外のバイト列が書き込んだバイト列に一致していること", func(t *testing.T) {
 		expectedPage := file.NewPage(blockSize)
-		expectedBoundary := blockSize - (int(file.Int32ByteSize) + len(testRecordBytes)) // バイト列の長さが先頭に付与されるので.
+		expectedBoundary := blockSize - (int(constants.Int32ByteSize) + len(testRecordBytes)) // バイト列の長さが先頭に付与されるので.
 		expectedPage.SetInt(0, types.Int(expectedBoundary))
 		expectedPage.SetBytes(types.Int(expectedBoundary), testRecordBytes)
 
@@ -129,7 +130,7 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 
 	t.Run("logManager.logPageは、2つ目のレコードだけが書き込まれていること.", func(t *testing.T) {
 		expectedLogPage := file.NewPage(blockSize)
-		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(record2))
+		expectedBoundary := blockSize - (constants.Int32ByteSize + util.Len(record2))
 		expectedLogPage.SetInt(0, expectedBoundary)
 		expectedLogPage.SetBytes(expectedBoundary, record2)
 
@@ -143,7 +144,7 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 
 	t.Run("ディスク上のログファイルにはブロック1つだけ書き込まれており、record1だけが記録されている.", func(t *testing.T) {
 		expectedWrittenLogPage := file.NewPage(blockSize)
-		expectedBoundary := blockSize - (file.Int32ByteSize + util.Len(record1))
+		expectedBoundary := blockSize - (constants.Int32ByteSize + util.Len(record1))
 		expectedWrittenLogPage.SetInt(0, expectedBoundary)
 		expectedWrittenLogPage.SetBytes(expectedBoundary, record1)
 

@@ -7,20 +7,20 @@ import (
 )
 
 type BlockID struct {
-	Filename string
-	Blknum   types.Int
+	Filename    string
+	BlockNumber types.BlockNumber
 }
 
-func NewBlockID(filename string, blknum types.Int) *BlockID {
-	return &BlockID{Filename: filename, Blknum: blknum}
+func NewBlockID(filename string, blknum types.BlockNumber) BlockID {
+	return BlockID{Filename: filename, BlockNumber: blknum}
 }
 
 func (b BlockID) Equals(other BlockID) bool {
-	return b.Filename == other.Filename && b.Blknum == other.Blknum
+	return b.Filename == other.Filename && b.BlockNumber == other.BlockNumber
 }
 
 func (b BlockID) ToString() string {
-	return fmt.Sprintf("[file %s, block %d]", b.Filename, b.Blknum)
+	return fmt.Sprintf("[file %s, block %d]", b.Filename, b.BlockNumber)
 }
 
 func (b BlockID) HashCode() int {

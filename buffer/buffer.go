@@ -11,7 +11,7 @@ type Buffer struct {
 	logManager  *log.LogManager
 
 	contents *file.Page
-	blockID  *file.BlockID
+	blockID  file.BlockID
 
 	pinCount types.Int
 
@@ -24,10 +24,10 @@ type Buffer struct {
 
 func NewBuffer(fm *file.FileManager, lm *log.LogManager) *Buffer {
 	return &Buffer{
-		fileManager:       fm,
-		logManager:        lm,
-		contents:          file.NewPage(fm.BlockSize()),
-		blockID:           nil,
+		fileManager: fm,
+		logManager:  lm,
+		contents:    file.NewPage(fm.BlockSize()),
+		// blockID:           nil,
 		pinCount:          0,
 		transactionNumber: -1,
 		lsn:               -1,
@@ -38,7 +38,7 @@ func (b *Buffer) GetContents() *file.Page {
 	return b.contents
 }
 
-func (b *Buffer) GetBlockID() *file.BlockID {
+func (b *Buffer) GetBlockID() file.BlockID {
 	return b.blockID
 }
 
@@ -58,7 +58,7 @@ func (b *Buffer) ModifyingTransaction() types.TransactionNumber {
 	return b.transactionNumber
 }
 
-func (b *Buffer) assignToBlock(blockID *file.BlockID) {
+func (b *Buffer) assignToBlock(blockID file.BlockID) {
 	b.flush()
 	b.blockID = blockID
 	b.fileManager.Read(b.blockID, b.contents)

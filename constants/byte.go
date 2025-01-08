@@ -1,4 +1,4 @@
-package file
+package constants
 
 import "simple-db-go/types"
 

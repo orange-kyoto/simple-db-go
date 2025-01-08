@@ -64,27 +64,27 @@ func (t *Transaction) Recover() {
 }
 
 // 注意：呼び出し元には buffer の存在を知らせない.(それなら、他のメソッドでよしなに呼べばいいのでは？)
-func (t *Transaction) Pin(blockID *file.BlockID) {
+func (t *Transaction) Pin(blockID file.BlockID) {
 	t.bufferList.Pin(blockID)
 }
 
-func (t *Transaction) Unpin(blockID *file.BlockID) {
+func (t *Transaction) Unpin(blockID file.BlockID) {
 	t.bufferList.Unpin(blockID)
 }
 
-func (t *Transaction) GetInt(blockID *file.BlockID, offset types.Int) types.Int {
+func (t *Transaction) GetInt(blockID file.BlockID, offset types.Int) types.Int {
 	t.concurrencyManager.SLock(blockID)
 	buffer := t.bufferList.GetBuffer(blockID)
 	return buffer.GetContents().GetInt(offset)
 }
 
-func (t *Transaction) GetString(blockID *file.BlockID, offset types.Int) string {
+func (t *Transaction) GetString(blockID file.BlockID, offset types.Int) string {
 	t.concurrencyManager.SLock(blockID)
 	buffer := t.bufferList.GetBuffer(blockID)
 	return buffer.GetContents().GetString(offset)
 }
 
-func (t *Transaction) SetInt(blockID *file.BlockID, offset types.Int, val types.Int, okToLog bool) {
+func (t *Transaction) SetInt(blockID file.BlockID, offset types.Int, val types.Int, okToLog bool) {
 	t.concurrencyManager.XLock(blockID)
 	buffer := t.bufferList.GetBuffer(blockID)
 	var lsn log.LSN = -1
@@ -97,7 +97,7 @@ func (t *Transaction) SetInt(blockID *file.BlockID, offset types.Int, val types.
 	buffer.SetModified(t.transactionNumber, lsn)
 }
 
-func (t *Transaction) SetString(blockID *file.BlockID, offset types.Int, val string, okToLog bool) {
+func (t *Transaction) SetString(blockID file.BlockID, offset types.Int, val string, okToLog bool) {
 	t.concurrencyManager.XLock(blockID)
 	buffer := t.bufferList.GetBuffer(blockID)
 	var lsn log.LSN = -1
@@ -121,14 +121,14 @@ func (t *Transaction) BlockSize() types.Int {
 
 // 注意：End Of File marker に対してのロックを獲得して排他制御をする.
 func (t *Transaction) Size(filename string) types.Int {
-	dummyBlockID := file.NewBlockID(filename, END_OF_FILE)
+	dummyBlockID := file.NewBlockID(filename, types.BlockNumber(END_OF_FILE))
 	t.concurrencyManager.SLock(dummyBlockID)
 	return t.fileManager.GetBlockLength(filename)
 }
 
 // 注意：End Of File marker に対してのロックを獲得して排他制御をする.
-func (t *Transaction) Append(filename string) *file.BlockID {
-	dummyBlockID := file.NewBlockID(filename, END_OF_FILE)
+func (t *Transaction) Append(filename string) file.BlockID {
+	dummyBlockID := file.NewBlockID(filename, types.BlockNumber(END_OF_FILE))
 	t.concurrencyManager.XLock(dummyBlockID)
 	return t.fileManager.Append(filename)
 }

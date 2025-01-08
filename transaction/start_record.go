@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -22,7 +23,7 @@ type StartRecord struct {
 * 2つ目：トランザクション番号
 */
 func NewStartRecord(page *file.Page) *StartRecord {
-	tpos := file.Int32ByteSize
+	tpos := constants.Int32ByteSize
 	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &StartRecord{
@@ -47,8 +48,8 @@ func (sr *StartRecord) ToString() string {
 }
 
 func WriteStartRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
-	tpos := file.Int32ByteSize
-	recordLength := tpos + file.Int32ByteSize
+	tpos := constants.Int32ByteSize
+	recordLength := tpos + constants.Int32ByteSize
 
 	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)

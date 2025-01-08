@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
 )
@@ -28,7 +29,7 @@ type LogManager struct {
 	logPage *file.Page
 
 	// 現在 Log Page に読み込んでいる BlockID
-	currentBlockID *file.BlockID
+	currentBlockID file.BlockID
 
 	// 最新の LSN (ディスクには書き込まれていないかもしれないが、少なくともLog Page上にはある)
 	latestLSN LSN
@@ -47,21 +48,20 @@ func NewLogManager(fm *file.FileManager, logFileName string) *LogManager {
 	logSize := fm.GetBlockLength(logFileName)
 
 	lm := &LogManager{
-		fileManager:    fm,
-		logFileName:    logFileName,
-		currentBlockID: nil,
-		logPage:        logPage,
-		latestLSN:      0,
-		lastSavedLSN:   0,
-		requestChan:    make(chan AppendRequest),
-		closeChan:      make(chan bool),
+		fileManager:  fm,
+		logFileName:  logFileName,
+		logPage:      logPage,
+		latestLSN:    0,
+		lastSavedLSN: 0,
+		requestChan:  make(chan AppendRequest),
+		closeChan:    make(chan bool),
 	}
 
 	if logSize == 0 {
 		lm.currentBlockID = lm.appendNewBlock()
 	} else {
 		// ログファイルの末尾のブロックを読み込む
-		lm.currentBlockID = file.NewBlockID(logFileName, logSize-1)
+		lm.currentBlockID = file.NewBlockID(logFileName, types.BlockNumber(logSize-1))
 		fm.Read(lm.currentBlockID, logPage)
 	}
 
@@ -118,12 +118,12 @@ func (lm *LogManager) append(logRecord RawLogRecord) LSN {
 	var boundary types.Int
 	boundary = lm.logPage.GetInt(0)
 	recordSize := types.Int(len(logRecord))
-	bytesNeeded := recordSize + file.Int32ByteSize
+	bytesNeeded := recordSize + constants.Int32ByteSize
 
 	// 新しく必要になるバイト数(bytesNeeded) = 4 + len(logRecord)
 	// 今 Log Page で空いているバイト数 = boundary - 4
 	// logRecordがそのままPageに収まる条件: boundary - 4 >= bytesNeeded
-	if boundary-file.Int32ByteSize < bytesNeeded {
+	if boundary-constants.Int32ByteSize < bytesNeeded {
 		// Log Page に収まらない場合の処理
 		lm.flush()                              // ディスクに書き込んで、
 		lm.currentBlockID = lm.appendNewBlock() // 新しいブロックで Log Page を更新する.
@@ -139,7 +139,7 @@ func (lm *LogManager) append(logRecord RawLogRecord) LSN {
 
 // ログファイルの末尾に新しくブロックを１つ追加する
 // その際にブロックサイズを Log Page の先頭に付与する(boundary)
-func (lm *LogManager) appendNewBlock() *file.BlockID {
+func (lm *LogManager) appendNewBlock() file.BlockID {
 	appendedBlockID := lm.fileManager.Append(lm.logFileName)
 	boundary := lm.fileManager.BlockSize()
 	lm.logPage.SetInt(0, boundary)
@@ -175,7 +175,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 
 	// 指定したブロックに移動する. boundary, currentPosition は最新のレコードの位置を示す.
 	// ログレコードはブロック内で右から左に書き込まれることに注意.
-	moveToBlock := func(destBlockID *file.BlockID) {
+	moveToBlock := func(destBlockID file.BlockID) {
 		lm.fileManager.Read(destBlockID, page)
 		currentPosition = page.GetInt(0)
 	}
@@ -186,7 +186,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 		defer close(logChan)
 
 		hasNext := func() bool {
-			return currentPosition < lm.fileManager.BlockSize() || blockID.Blknum > 0
+			return currentPosition < lm.fileManager.BlockSize() || blockID.BlockNumber > 0
 		}
 
 		for {
@@ -201,7 +201,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 			// 最新のログから辿れるようにするので、ログファイルないの後ろのブロックから読み込むイメージ
 			if currentPosition == lm.fileManager.BlockSize() {
 				fmt.Printf("Moving to previous block...\n")
-				blockID = file.NewBlockID(blockID.Filename, blockID.Blknum-1)
+				blockID = file.NewBlockID(blockID.Filename, blockID.BlockNumber-1)
 				moveToBlock(blockID)
 				fmt.Printf("After moving to previous block. currentPosition=%d\n", currentPosition)
 				// ちゃんとここで更新されているっぽい。
@@ -211,7 +211,7 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 			logRecord := page.GetBytes(currentPosition)
 			fmt.Printf("--- logRecord: %+v (%s), address: %p ---\n", logRecord, string(logRecord), &logRecord)
 			// 現在位置を更新する
-			currentPosition += file.Int32ByteSize + types.Int(len(logRecord))
+			currentPosition += constants.Int32ByteSize + types.Int(len(logRecord))
 			fmt.Printf("new currentPosition: %d\n", currentPosition)
 
 			logChan <- logRecord

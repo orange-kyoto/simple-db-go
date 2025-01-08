@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/types"
@@ -22,7 +23,7 @@ type RollbackRecord struct {
 * 2つ目：トランザクション番号
 */
 func NewRollbackRecord(page *file.Page) *RollbackRecord {
-	tpos := file.Int32ByteSize
+	tpos := constants.Int32ByteSize
 	txNum := types.TransactionNumber(page.GetInt(tpos))
 
 	return &RollbackRecord{
@@ -50,8 +51,8 @@ func (rr *RollbackRecord) ToString() string {
 }
 
 func WriteRollbackRecord(logManager *log.LogManager, transactionNumber types.TransactionNumber) log.LSN {
-	tpos := file.Int32ByteSize
-	recordLength := tpos + file.Int32ByteSize
+	tpos := constants.Int32ByteSize
+	recordLength := tpos + constants.Int32ByteSize
 
 	rawLogRecord := make([]byte, recordLength)
 	page := file.NewPageFrom(rawLogRecord)
