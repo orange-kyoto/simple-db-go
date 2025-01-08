@@ -126,10 +126,10 @@ func TestTableManagerGetLayout(t *testing.T) {
 
 		for _, test := range tests {
 			layout, err := tableManager.GetLayout(test.tableName, transaction)
-			if assert.NoError(t, err, "存在するテーブルと期待されるので、GetLayout はエラーを返してはいけない.") {
-				assert.NotNil(t, layout, "存在するテーブルと期待されるので、GetLayout は nil を返してはいけない.")
-				assert.Equal(t, test.layout, layout, "GetLayout は期待される Layout を返すべし.")
-				assert.NotSame(t, test.layout, layout, "GetLayout はDBテーブルから新たに Layout を復元するので、ポインタは異なっているべし.")
+			if assert.NoErrorf(t, err, "存在するテーブルと期待されるので、GetLayout はエラーを返してはいけない. table_name=%s\n", test.tableName) {
+				assert.NotNilf(t, layout, "存在するテーブルと期待されるので、GetLayout は nil を返してはいけない. table_name=%s\n", test.tableName)
+				assert.Equalf(t, test.layout, layout, "GetLayout は期待される Layout を返すべし. table_name=%s\n", test.tableName)
+				assert.NotSamef(t, test.layout, layout, "GetLayout はDBテーブルから新たに Layout を復元するので、ポインタは異なっているべし. table_name=%s\n", test.tableName)
 			}
 		}
 	})
