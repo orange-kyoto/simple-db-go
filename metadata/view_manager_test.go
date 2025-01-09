@@ -95,7 +95,7 @@ func TestViewManagerGetCreateView(t *testing.T) {
 	viewManager := NewViewManager(true, tableManager, transaction)
 
 	t.Run("正常にビューの作成と取得が行える.", func(t *testing.T) {
-		testViewName := "test_view"
+		testViewName := types.ViewName("test_view")
 		testViewDef := "SELECT * FROM test_table;"
 
 		t.Run("正常にビューの作成ができる.", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestViewManagerGetCreateView(t *testing.T) {
 			viewCatalogTableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
 
 			assert.True(t, viewCatalogTableScan.Next(), "ビューカタログにレコードが登録されているはず.")
-			assert.Equal(t, testViewName, viewCatalogTableScan.GetString("view_name"), "ビューカタログの view_name が期待した値であるはず.")
+			assert.Equal(t, string(testViewName), viewCatalogTableScan.GetString("view_name"), "ビューカタログの view_name が期待した値であるはず.")
 			assert.Equal(t, testViewDef, viewCatalogTableScan.GetString("view_def"), "ビューカタログの view_def が期待した値であるはず.")
 			assert.False(t, viewCatalogTableScan.Next(), "ビューカタログには１行しか登録されていないはず.")
 		})

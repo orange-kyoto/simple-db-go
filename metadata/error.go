@@ -1,9 +1,12 @@
 package metadata
 
-import "fmt"
+import (
+	"fmt"
+	"simple-db-go/types"
+)
 
 type TableCatalogNotFoundError struct {
-	TableName string
+	TableName types.TableName
 }
 
 func (e TableCatalogNotFoundError) Error() string {
@@ -11,7 +14,7 @@ func (e TableCatalogNotFoundError) Error() string {
 }
 
 type FieldCatalogNotFoundError struct {
-	TableName string
+	TableName types.TableName
 }
 
 func (e FieldCatalogNotFoundError) Error() string {
@@ -19,7 +22,7 @@ func (e FieldCatalogNotFoundError) Error() string {
 }
 
 type CannotGetViewError struct {
-	ViewName string
+	ViewName types.ViewName
 	error    error
 }
 

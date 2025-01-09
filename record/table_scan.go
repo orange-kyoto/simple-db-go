@@ -17,11 +17,11 @@ type TableScan struct {
 	currentSlotNumber SlotNumber
 }
 
-func NewTableScan(transaction *transaction.Transaction, tableName string, layout *Layout) *TableScan {
+func NewTableScan(transaction *transaction.Transaction, tableName types.TableName, layout *Layout) *TableScan {
 	tableScan := &TableScan{
 		transaction:       transaction,
 		layout:            layout,
-		fileName:          tableName + ".table",
+		fileName:          string(tableName) + ".table",
 		currentSlotNumber: NULL_SLOT_NUMBER,
 	}
 

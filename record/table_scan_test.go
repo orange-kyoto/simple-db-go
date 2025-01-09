@@ -16,8 +16,8 @@ func TestTableScanInitialization(t *testing.T) {
 	layout := NewLayout(schema)
 
 	t.Run("テーブルファイルが空の場合、ブロックが追加される. そのブロックが current block になる.", func(t *testing.T) {
-		tableName := "test_table_scan_initialization_1"
-		fileName := tableName + ".table"
+		tableName := types.TableName("test_table_scan_initialization_1")
+		fileName := string(tableName) + ".table"
 
 		// 事前に cleanup しているのでファイルは無い.
 		_, err := os.Stat(path.Join(tableScanTestName, fileName))
@@ -39,8 +39,8 @@ func TestTableScanInitialization(t *testing.T) {
 	})
 
 	t.Run("既にテーブルファイルが存在する場合、そのファイルの先頭ブロックが current block になる.", func(t *testing.T) {
-		tableName := "test_table_scan_initialization_2"
-		fileName := tableName + ".table"
+		tableName := types.TableName("test_table_scan_initialization_2")
+		fileName := string(tableName) + ".table"
 
 		// 先にファイルを用意する
 		fileManager, _, _ := test_util.GetManagers(tableScanTestName)
@@ -67,7 +67,7 @@ func TestTableScanClose(t *testing.T) {
 
 	t.Run("Close実行後に、RecordPage に読み込んでいたブロックIDに対応するバッファーがUnpinされる.", func(t *testing.T) {
 		transaction := test_util.StartNewTransaction(tableScanTestName)
-		tableName := "test_table_scan_close"
+		tableName := types.TableName("test_table_scan_close")
 		tableScan := NewTableScan(transaction, tableName, layout)
 
 		assert.Equal(t, types.Int(7), transaction.AvailableBuffers(), "前のテストを含め、合計3つPinされているので利用可能なバッファーは7.")
@@ -82,8 +82,8 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_move_to_record_id"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_move_to_record_id")
+	fileName := string(tableName) + ".table"
 
 	// 先にファイルを用意する
 	fileManager, _, _ := test_util.GetManagers(tableScanTestName)
@@ -156,8 +156,8 @@ func TestTableScanBeforeFirst(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_before_first"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_before_first")
+	fileName := string(tableName) + ".table"
 
 	transaction := test_util.StartNewTransaction(tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
@@ -175,8 +175,8 @@ func TestTableScanInsert(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_insert"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_insert")
+	fileName := string(tableName) + ".table"
 
 	transaction := test_util.StartNewTransaction(tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
@@ -224,8 +224,8 @@ func TestTableScanDelete(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_delete"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_delete")
+	fileName := string(tableName) + ".table"
 
 	transaction := test_util.StartNewTransaction(tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
@@ -248,8 +248,8 @@ func TestTableScanNext(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_next"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_next")
+	fileName := string(tableName) + ".table"
 
 	transaction := test_util.StartNewTransaction(tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)

@@ -112,7 +112,7 @@ func TestTableManagerGetLayout(t *testing.T) {
 
 	t.Run("各テーブルのレイアウトを正しく取得できる", func(t *testing.T) {
 		tests := []struct {
-			tableName string
+			tableName types.TableName
 			layout    *record.Layout
 		}{
 			{TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout},

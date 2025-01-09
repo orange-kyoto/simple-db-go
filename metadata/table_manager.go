@@ -44,14 +44,14 @@ func NewTableManager(isNew bool, transaction *transaction.Transaction) *TableMan
 
 // schema, layout の情報をもとに、カタログレコードを登録する.
 // TableScan を利用してカタログレコードを登録する.
-func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, transaction *transaction.Transaction) {
+func (tm *TableManager) CreateTable(tableName types.TableName, schema *record.Schema, transaction *transaction.Transaction) {
 	layout := record.NewLayout(schema)
 
 	// table_catalog というテーブルに、テーブルカタログの情報を登録している.
 	// 1行だけ登録.
 	tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tm.tableCatalogLayout)
 	tableCatalogTableScan.Insert()
-	tableCatalogTableScan.SetString("table_name", tableName)
+	tableCatalogTableScan.SetString("table_name", string(tableName))
 	tableCatalogTableScan.SetInt("slot_size", layout.GetSlotSize())
 	tableCatalogTableScan.Close()
 
@@ -60,7 +60,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tra
 	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tm.fieldCatalogLayout)
 	for _, fieldName := range schema.Fields() {
 		fieldCatalogTableScan.Insert()
-		fieldCatalogTableScan.SetString("table_name", tableName)
+		fieldCatalogTableScan.SetString("table_name", string(tableName))
 		fieldCatalogTableScan.SetString("field_name", string(fieldName))
 		fieldCatalogTableScan.SetInt("type", types.Int(schema.FieldType(fieldName)))
 		fieldCatalogTableScan.SetInt("length", types.Int(schema.Length(fieldName)))
@@ -69,12 +69,12 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tra
 	fieldCatalogTableScan.Close()
 }
 
-func (tm *TableManager) GetLayout(tableName string, transaction *transaction.Transaction) (*record.Layout, error) {
+func (tm *TableManager) GetLayout(tableName types.TableName, transaction *transaction.Transaction) (*record.Layout, error) {
 	tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tm.tableCatalogLayout)
 
 	slotSize := types.Int(-1)
 	for tableCatalogTableScan.Next() {
-		if tableCatalogTableScan.GetString("table_name") == tableName {
+		if tableCatalogTableScan.GetString("table_name") == string(tableName) {
 			slotSize = tableCatalogTableScan.GetInt("slot_size")
 			break
 		}
@@ -90,7 +90,7 @@ func (tm *TableManager) GetLayout(tableName string, transaction *transaction.Tra
 	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tm.fieldCatalogLayout)
 
 	for fieldCatalogTableScan.Next() {
-		if fieldCatalogTableScan.GetString("table_name") == tableName {
+		if fieldCatalogTableScan.GetString("table_name") == string(tableName) {
 			fieldName := record.FieldName(fieldCatalogTableScan.GetString("field_name"))
 			fieldType := record.FieldType(fieldCatalogTableScan.GetInt("type"))
 			fieldLength := record.FieldLength(fieldCatalogTableScan.GetInt("length"))

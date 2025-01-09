@@ -5,6 +5,7 @@ import (
 	"simple-db-go/constants"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
+	"simple-db-go/types"
 )
 
 type ViewManager struct {
@@ -26,7 +27,7 @@ func NewViewManager(isNew bool, tableManager *TableManager, transaction *transac
 	return viewManager
 }
 
-func (vm *ViewManager) CreateView(viewName string, viewDef string, transaction *transaction.Transaction) {
+func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef string, transaction *transaction.Transaction) {
 	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
 	if err != nil {
 		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.
@@ -35,12 +36,12 @@ func (vm *ViewManager) CreateView(viewName string, viewDef string, transaction *
 
 	tableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
 	tableScan.Insert()
-	tableScan.SetString("view_name", viewName)
+	tableScan.SetString("view_name", string(viewName))
 	tableScan.SetString("view_def", viewDef)
 	tableScan.Close()
 }
 
-func (vm *ViewManager) GetView(viewName string, transaction *transaction.Transaction) (string, error) {
+func (vm *ViewManager) GetView(viewName types.ViewName, transaction *transaction.Transaction) (string, error) {
 	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
 	if err != nil {
 		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.
@@ -51,7 +52,7 @@ func (vm *ViewManager) GetView(viewName string, transaction *transaction.Transac
 	defer tableScan.Close()
 
 	for tableScan.Next() {
-		if tableScan.GetString("view_name") == viewName {
+		if tableScan.GetString("view_name") == string(viewName) {
 			viewDef := tableScan.GetString("view_def")
 			return viewDef, nil
 		}
