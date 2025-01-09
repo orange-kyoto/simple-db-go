@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"os"
 	"path"
 	"simple-db-go/record"
 	"simple-db-go/test_util"
@@ -18,11 +17,8 @@ func TestTableManagerInitialization(t *testing.T) {
 	t.Run("isNew = false で呼ばれた場合はカタログテーブルは作られない.", func(t *testing.T) {
 		NewTableManager(false, transaction)
 
-		_, err := os.Stat(path.Join(tableManagerTestName, "table_catalog.table"))
-		assert.True(t, os.IsNotExist(err), "table_catalog.table が存在してはいけない.")
-
-		_, err = os.Stat(path.Join(tableManagerTestName, "field_catalog.table"))
-		assert.True(t, os.IsNotExist(err), "field_catalog.table が存在してはいけない.")
+		assert.NoFileExists(t, path.Join(tableManagerTestName, "field_catalog.table"), "field_catalog.table が存在してはいけない.")
+		assert.NoFileExists(t, path.Join(tableManagerTestName, "field_catalog.table"), "field_catalog.table が存在してはいけない.")
 	})
 
 	tableManager := NewTableManager(true, transaction)
