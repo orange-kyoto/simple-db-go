@@ -37,50 +37,35 @@ func TestViewManagerNewViewManager(t *testing.T) {
 		viewCatalogTableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
 
 		t.Run("テーブルカタログにビューカタログのレコードが登録されている.", func(t *testing.T) {
-			type tcatRecord struct {
-				tableName string
-				slotSize  types.Int
-			}
-			expectedRecords := []tcatRecord{
+			expectedRecords := []TableCatalogRow{
 				{VIEW_CATALOG_TABLE_NAME, 128},
 			}
-			actualRecords := make([]tcatRecord, 0, 1)
+			actualRecords := make([]TableCatalogRow, 0)
 			for tableCatalogTableScan.Next() {
-				if tableCatalogTableScan.GetString("table_name") == VIEW_CATALOG_TABLE_NAME {
-					actualRecords = append(actualRecords, tcatRecord{
-						tableName: tableCatalogTableScan.GetString("table_name"),
-						slotSize:  tableCatalogTableScan.GetInt("slot_size"),
-					})
-				}
+				actualRecords = append(actualRecords, TableCatalogRow{
+					TableName: types.TableName(tableCatalogTableScan.GetString("table_name")),
+					SlotSize:  types.SlotSize(tableCatalogTableScan.GetInt("slot_size")),
+				})
 			}
-			assert.Equal(t, expectedRecords, actualRecords, "テーブルカタログにビューカタログのレコードが登録されているはず.")
+			assert.Subset(t, actualRecords, expectedRecords, "テーブルカタログにビューカタログのレコードが登録されているはず.")
 		})
 
 		t.Run("フィールドカタログにビューカタログのレコードが登録されている.", func(t *testing.T) {
-			type fcatRecord struct {
-				tableName string
-				fieldName string
-				fieldType types.Int
-				length    types.Int
-				offset    types.Int
+			expectedRecords := []FieldCatalogRow{
+				{VIEW_CATALOG_TABLE_NAME, "view_name", constants.VARCHAR, 16, 4},
+				{VIEW_CATALOG_TABLE_NAME, "view_def", constants.VARCHAR, 100, 24},
 			}
-			expectedRecords := []fcatRecord{
-				{VIEW_CATALOG_TABLE_NAME, "view_name", types.Int(constants.VARCHAR), 16, 4},
-				{VIEW_CATALOG_TABLE_NAME, "view_def", types.Int(constants.VARCHAR), 100, 24},
-			}
-			actualRecords := make([]fcatRecord, 0, 2)
+			actualRecords := make([]FieldCatalogRow, 0, 2)
 			for fieldCatalogTableScan.Next() {
-				if fieldCatalogTableScan.GetString("table_name") == VIEW_CATALOG_TABLE_NAME {
-					actualRecords = append(actualRecords, fcatRecord{
-						tableName: fieldCatalogTableScan.GetString("table_name"),
-						fieldName: fieldCatalogTableScan.GetString("field_name"),
-						fieldType: fieldCatalogTableScan.GetInt("type"),
-						length:    fieldCatalogTableScan.GetInt("length"),
-						offset:    fieldCatalogTableScan.GetInt("offset"),
-					})
-				}
+				actualRecords = append(actualRecords, FieldCatalogRow{
+					TableName: types.TableName(fieldCatalogTableScan.GetString("table_name")),
+					FieldName: types.FieldName(fieldCatalogTableScan.GetString("field_name")),
+					Type:      types.FieldType(fieldCatalogTableScan.GetInt("type")),
+					Length:    types.FieldLength(fieldCatalogTableScan.GetInt("length")),
+					Offset:    types.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset")),
+				})
 			}
-			assert.Equal(t, expectedRecords, actualRecords, "フィールドカタログにビューカタログのレコードが登録されているはず.")
+			assert.Subset(t, actualRecords, expectedRecords, "フィールドカタログにビューカタログのレコードが登録されているはず.")
 		})
 
 		t.Run("ビューは作成していないので、ビューカタログはレコードが０件である.", func(t *testing.T) {
@@ -97,7 +82,7 @@ func TestViewManagerGetCreateView(t *testing.T) {
 
 	t.Run("正常にビューの作成と取得が行える.", func(t *testing.T) {
 		testViewName := types.ViewName("test_view")
-		testViewDef := "SELECT * FROM test_table;"
+		testViewDef := types.ViewDef("SELECT * FROM test_table;")
 
 		t.Run("正常にビューの作成ができる.", func(t *testing.T) {
 			assert.NotPanics(t, func() { viewManager.CreateView(testViewName, testViewDef, transaction) }, "ビューの作成に失敗してはいけない.")
@@ -107,7 +92,7 @@ func TestViewManagerGetCreateView(t *testing.T) {
 
 			assert.True(t, viewCatalogTableScan.Next(), "ビューカタログにレコードが登録されているはず.")
 			assert.Equal(t, string(testViewName), viewCatalogTableScan.GetString("view_name"), "ビューカタログの view_name が期待した値であるはず.")
-			assert.Equal(t, testViewDef, viewCatalogTableScan.GetString("view_def"), "ビューカタログの view_def が期待した値であるはず.")
+			assert.Equal(t, string(testViewDef), viewCatalogTableScan.GetString("view_def"), "ビューカタログの view_def が期待した値であるはず.")
 			assert.False(t, viewCatalogTableScan.Next(), "ビューカタログには１行しか登録されていないはず.")
 		})
 

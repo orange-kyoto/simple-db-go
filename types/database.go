@@ -3,6 +3,11 @@ package types
 // DB テーブル名
 type TableName string
 
+// DB スロットサイズ
+// スロットの先頭4バイトには、Empty or InUse のフラグが入るので、
+// スロットサイズは、レコードサイズに４バイトを加えたものになる.
+type SlotSize Int
+
 // DBレコードのフィールド名
 type FieldName string
 
@@ -19,6 +24,9 @@ type FieldOffsetInSlot Int
 
 // DB ビュー名
 type ViewName string
+
+// DB ビュー定義
+type ViewDef string
 
 // DB インデックス名
 type IndexName string

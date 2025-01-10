@@ -10,11 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// 意外とシンプルというか、ディスクへの書き込みがなくてもテストできるものだらけだった。
-// manager 周りを作らなくて良いので助かる.
-
 func TestIndexInfoNewInedxInfo(t *testing.T) {
 	transaction := test_util.StartNewTransaction(indexInfoTestName)
+	defer transaction.Rollback()
 
 	// テスト用のテーブルを想定.
 	testTableSchema := record.NewSchema()

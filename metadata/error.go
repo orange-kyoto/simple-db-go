@@ -27,5 +27,14 @@ type CannotGetViewError struct {
 }
 
 func (e CannotGetViewError) Error() string {
-	return fmt.Sprintf("[Metadata Error] ビューの取得に失敗しました. view_name=%s, error=%s", e.ViewName, e.error)
+	return fmt.Sprintf("[Metadata Error] ビューの取得に失敗しました. view_name=%s, error=%+v", e.ViewName, e.error)
+}
+
+type CannotGetIndexInfoError struct {
+	TableName types.TableName
+	error     error
+}
+
+func (e CannotGetIndexInfoError) Error() string {
+	return fmt.Sprintf("[Metadata Error] インデックス統計情報の取得に失敗しました. table_name=%s, error=%+v", e.TableName, e.error)
 }

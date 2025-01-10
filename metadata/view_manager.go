@@ -27,7 +27,7 @@ func NewViewManager(isNew bool, tableManager *TableManager, transaction *transac
 	return viewManager
 }
 
-func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef string, transaction *transaction.Transaction) {
+func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef types.ViewDef, transaction *transaction.Transaction) {
 	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
 	if err != nil {
 		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.
@@ -37,11 +37,11 @@ func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef string, trans
 	tableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
 	tableScan.Insert()
 	tableScan.SetString("view_name", string(viewName))
-	tableScan.SetString("view_def", viewDef)
+	tableScan.SetString("view_def", string(viewDef))
 	tableScan.Close()
 }
 
-func (vm *ViewManager) GetView(viewName types.ViewName, transaction *transaction.Transaction) (string, error) {
+func (vm *ViewManager) GetView(viewName types.ViewName, transaction *transaction.Transaction) (types.ViewDef, error) {
 	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
 	if err != nil {
 		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.
@@ -53,7 +53,7 @@ func (vm *ViewManager) GetView(viewName types.ViewName, transaction *transaction
 
 	for tableScan.Next() {
 		if tableScan.GetString("view_name") == string(viewName) {
-			viewDef := tableScan.GetString("view_def")
+			viewDef := types.ViewDef(tableScan.GetString("view_def"))
 			return viewDef, nil
 		}
 	}
