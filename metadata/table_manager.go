@@ -86,15 +86,15 @@ func (tm *TableManager) GetLayout(tableName types.TableName, transaction *transa
 	}
 
 	schema := record.NewSchema()
-	offsets := make(map[record.FieldName]record.FieldOffsetInSlot)
+	offsets := make(map[types.FieldName]types.FieldOffsetInSlot)
 	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tm.fieldCatalogLayout)
 
 	for fieldCatalogTableScan.Next() {
 		if fieldCatalogTableScan.GetString("table_name") == string(tableName) {
-			fieldName := record.FieldName(fieldCatalogTableScan.GetString("field_name"))
-			fieldType := record.FieldType(fieldCatalogTableScan.GetInt("type"))
-			fieldLength := record.FieldLength(fieldCatalogTableScan.GetInt("length"))
-			fieldOffset := record.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset"))
+			fieldName := types.FieldName(fieldCatalogTableScan.GetString("field_name"))
+			fieldType := types.FieldType(fieldCatalogTableScan.GetInt("type"))
+			fieldLength := types.FieldLength(fieldCatalogTableScan.GetInt("length"))
+			fieldOffset := types.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset"))
 			offsets[fieldName] = fieldOffset
 			schema.AddField(fieldName, fieldType, fieldLength)
 		}

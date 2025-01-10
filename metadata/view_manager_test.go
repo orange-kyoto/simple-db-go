@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"path"
+	"simple-db-go/constants"
 	"simple-db-go/record"
 	"simple-db-go/test_util"
 	"simple-db-go/types"
@@ -64,8 +65,8 @@ func TestViewManagerNewViewManager(t *testing.T) {
 				offset    types.Int
 			}
 			expectedRecords := []fcatRecord{
-				{VIEW_CATALOG_TABLE_NAME, "view_name", types.Int(record.VARCHAR), 16, 4},
-				{VIEW_CATALOG_TABLE_NAME, "view_def", types.Int(record.VARCHAR), 100, 24},
+				{VIEW_CATALOG_TABLE_NAME, "view_name", types.Int(constants.VARCHAR), 16, 4},
+				{VIEW_CATALOG_TABLE_NAME, "view_def", types.Int(constants.VARCHAR), 100, 24},
 			}
 			actualRecords := make([]fcatRecord, 0, 2)
 			for fieldCatalogTableScan.Next() {

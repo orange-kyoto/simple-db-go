@@ -1,10 +1,10 @@
 package metadata
 
 import (
-	"simple-db-go/record"
 	"simple-db-go/types"
 )
 
+// テーブルの統計情報
 type StatInfo struct {
 	numBlocks  types.Int
 	numRecords types.Int
@@ -27,6 +27,6 @@ func (si *StatInfo) GetRecordsOutput() types.Int {
 
 // NOTE: 雑な推定に基づいて値を返している.
 // Exercice 7.12 で改善する.
-func (si *StatInfo) GetDistinctValues(fieldName record.FieldName) types.Int {
+func (si *StatInfo) GetDistinctValues(fieldName types.FieldName) types.Int {
 	return 1 + (si.numRecords / 3)
 }

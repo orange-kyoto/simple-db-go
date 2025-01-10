@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"path"
+	"simple-db-go/constants"
 	"simple-db-go/record"
 	"simple-db-go/test_util"
 	"simple-db-go/types"
@@ -61,31 +62,31 @@ func TestTableManagerInitialization(t *testing.T) {
 
 		tests := []struct {
 			tableName string
-			fieldName record.FieldName
-			fieldType record.FieldType
-			length    record.FieldLength
-			offset    record.FieldOffsetInSlot
+			fieldName types.FieldName
+			fieldType types.FieldType
+			length    types.FieldLength
+			offset    types.FieldOffsetInSlot
 		}{
 			// 注意：INTEGER フィールドは固定長であり、length は使わないので全て0としている.
 			// table_catalog テーブルのフィールド情報
-			{TABLE_CATALOG_TABLE_NAME, "table_name", record.VARCHAR, 16, 4},
-			{TABLE_CATALOG_TABLE_NAME, "slot_size", record.INTEGER, 0, 24},
+			{TABLE_CATALOG_TABLE_NAME, "table_name", constants.VARCHAR, 16, 4},
+			{TABLE_CATALOG_TABLE_NAME, "slot_size", constants.INTEGER, 0, 24},
 			// field_catalog テーブルのフィールド情報
-			{FIELD_CATALOG_TABLE_NAME, "table_name", record.VARCHAR, 16, 4},
-			{FIELD_CATALOG_TABLE_NAME, "field_name", record.VARCHAR, 16, 24},
-			{FIELD_CATALOG_TABLE_NAME, "type", record.INTEGER, 0, 44},
-			{FIELD_CATALOG_TABLE_NAME, "length", record.INTEGER, 0, 48},
-			{FIELD_CATALOG_TABLE_NAME, "offset", record.INTEGER, 0, 52},
+			{FIELD_CATALOG_TABLE_NAME, "table_name", constants.VARCHAR, 16, 4},
+			{FIELD_CATALOG_TABLE_NAME, "field_name", constants.VARCHAR, 16, 24},
+			{FIELD_CATALOG_TABLE_NAME, "type", constants.INTEGER, 0, 44},
+			{FIELD_CATALOG_TABLE_NAME, "length", constants.INTEGER, 0, 48},
+			{FIELD_CATALOG_TABLE_NAME, "offset", constants.INTEGER, 0, 52},
 		}
 
 		for _, test := range tests {
 			exists := fieldCatalogTableScan.Next()
 			assert.Truef(t, exists, "フィールドカタログにレコードが登録されているはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
 			assert.Equalf(t, test.tableName, fieldCatalogTableScan.GetString("table_name"), "table_name が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.fieldName, record.FieldName(fieldCatalogTableScan.GetString("field_name")), "field_name が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.fieldType, record.FieldType(fieldCatalogTableScan.GetInt("type")), "type が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.length, record.FieldLength(fieldCatalogTableScan.GetInt("length")), "length が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.offset, record.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset")), "offset が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
+			assert.Equalf(t, test.fieldName, types.FieldName(fieldCatalogTableScan.GetString("field_name")), "field_name が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
+			assert.Equalf(t, test.fieldType, types.FieldType(fieldCatalogTableScan.GetInt("type")), "type が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
+			assert.Equalf(t, test.length, types.FieldLength(fieldCatalogTableScan.GetInt("length")), "length が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
+			assert.Equalf(t, test.offset, types.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset")), "offset が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
 		}
 
 		assert.False(t, fieldCatalogTableScan.Next(), "フィールドカタログには7行しか登録されていないはず.")
