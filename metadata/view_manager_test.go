@@ -4,7 +4,6 @@ import (
 	"path"
 	"simple-db-go/constants"
 	"simple-db-go/record"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 
 func TestViewManagerNewViewManager(t *testing.T) {
 	t.Run("isNew = false で呼ばれた場合はカタログテーブルは作られない.", func(t *testing.T) {
-		transaction := test_util.StartNewTransaction(viewManagerTestName)
+		transaction := newTransactionForTest(t, viewManagerTestName)
 		defer transaction.Rollback()
 
 		tableManager := NewTableManager(false, transaction)
@@ -23,7 +22,7 @@ func TestViewManagerNewViewManager(t *testing.T) {
 	})
 
 	t.Run("isNew = true で呼ばれた場合はビューカタログテーブルが作られ、期待したレコードが登録されている.", func(t *testing.T) {
-		transaction := test_util.StartNewTransaction(viewManagerTestName)
+		transaction := newTransactionForTest(t, viewManagerTestName)
 		defer transaction.Rollback()
 
 		tableManager := NewTableManager(true, transaction)
@@ -75,7 +74,7 @@ func TestViewManagerNewViewManager(t *testing.T) {
 }
 
 func TestViewManagerGetCreateView(t *testing.T) {
-	transaction := test_util.StartNewTransaction(viewManagerTestName)
+	transaction := newTransactionForTest(t, viewManagerTestName)
 	defer transaction.Rollback()
 	tableManager := NewTableManager(true, transaction)
 	viewManager := NewViewManager(true, tableManager, transaction)
@@ -97,14 +96,14 @@ func TestViewManagerGetCreateView(t *testing.T) {
 		})
 
 		t.Run("先ほど作成したビューの取得ができる.", func(t *testing.T) {
-			actualViewDef, err := viewManager.GetView(testViewName, transaction)
+			actualViewDef, err := viewManager.GetViewDef(testViewName, transaction)
 			if assert.NoError(t, err, "ビューの取得に失敗してはいけない.") {
 				assert.Equal(t, testViewDef, actualViewDef, "ビューの定義が期待した値であるはず.")
 			}
 		})
 
 		t.Run("作成していないビューの取得をするとエラーが返る.", func(t *testing.T) {
-			actualViewDef, err := viewManager.GetView("hoge_view", transaction)
+			actualViewDef, err := viewManager.GetViewDef("hoge_view", transaction)
 			assert.Error(t, err, "存在しないビューの取得ではエラーを返すべし.")
 			assert.IsType(t, CannotGetViewError{}, err, "存在しないビューの取得では CannotGetViewError を返すべし.")
 			assert.Empty(t, actualViewDef, "存在しないビューの取得では空文字を返すべし.")

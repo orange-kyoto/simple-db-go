@@ -15,13 +15,11 @@ type FileManager struct {
 	requestChan     chan FileRequest
 	closeChan       chan bool
 	blockSize       types.Int
+	isNew           bool
 }
 
 // NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
 func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
-	initDbDirectory(dbDirectoryPath)
-	cleanTempFiles(dbDirectoryPath)
-
 	fm := &FileManager{
 		dbDirectoryPath: dbDirectoryPath,
 		files:           make(map[string]*os.File),
@@ -29,6 +27,9 @@ func NewFileManager(dbDirectoryPath string, blockSize types.Int) *FileManager {
 		closeChan:       make(chan bool),
 		blockSize:       blockSize,
 	}
+
+	fm.initDbDirectory()
+	fm.cleanTempFiles()
 
 	go fm.run()
 
@@ -181,33 +182,29 @@ func (gbl *GetBlockLength) handleError(err error) {
 	gbl.replyChan <- -1
 }
 
-func initDbDirectory(dbDirectoryPath string) {
-	if _, err := os.Stat(dbDirectoryPath); os.IsNotExist(err) {
-		fmt.Println("DB ディレクトリが存在しません. 新規作成します.", dbDirectoryPath)
-		err := os.Mkdir(dbDirectoryPath, 0755)
+func (fm *FileManager) initDbDirectory() {
+	if _, err := os.Stat(fm.dbDirectoryPath); os.IsNotExist(err) {
+		fm.isNew = true
+		err := os.Mkdir(fm.dbDirectoryPath, 0755)
 		if err != nil {
-			fmt.Println("DB ディレクトリの作成に失敗しました.", dbDirectoryPath, err)
-			return
+			panic(fmt.Sprintf("DB ディレクトリの作成に失敗しました. %+v", err))
 		}
 	} else {
-		fmt.Println("DB ディレクトリが存在します.", dbDirectoryPath)
+		fm.isNew = false
 	}
 }
 
-func cleanTempFiles(dbDirectoryPath string) {
-	matches, err := filepath.Glob(filepath.Join(dbDirectoryPath, "temp*"))
+func (fm *FileManager) cleanTempFiles() {
+	matches, err := filepath.Glob(filepath.Join(fm.dbDirectoryPath, "temp*"))
 
 	if err != nil {
-		fmt.Println("ディレクトリの読み取りに失敗しました.", err)
-		return
+		panic(fmt.Sprintf("FileManager 起動時に temp ファイルの削除に失敗しました. %+v", err))
 	}
 
 	for _, match := range matches {
 		err := os.Remove(match)
 		if err != nil {
 			fmt.Println("tempファイルの削除に失敗しました.", err)
-		} else {
-			fmt.Println("tempファイルを削除しました.", match)
 		}
 	}
 }
@@ -307,4 +304,8 @@ func (fm *FileManager) GetBlockLength(fileName string) types.Int {
 
 func (fm *FileManager) Close() {
 	fm.closeChan <- true
+}
+
+func (fm *FileManager) IsNew() bool {
+	return fm.isNew
 }

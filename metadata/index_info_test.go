@@ -3,7 +3,6 @@ package metadata
 import (
 	"simple-db-go/constants"
 	"simple-db-go/record"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 )
 
 func TestIndexInfoNewInedxInfo(t *testing.T) {
-	transaction := test_util.StartNewTransaction(indexInfoTestName)
+	transaction := newTransactionForTest(t, indexInfoTestName)
 	defer transaction.Rollback()
 
 	// テスト用のテーブルを想定.

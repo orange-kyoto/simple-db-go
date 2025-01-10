@@ -4,7 +4,6 @@ import (
 	"path"
 	"simple-db-go/constants"
 	"simple-db-go/record"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestTableManagerInitialization(t *testing.T) {
-	transaction := test_util.StartNewTransaction(tableManagerTestName)
+	transaction := newTransactionForTest(t, tableManagerTestName)
 	defer transaction.Rollback()
 
 	t.Run("isNew = false で呼ばれた場合はカタログテーブルは作られない.", func(t *testing.T) {
@@ -98,7 +97,7 @@ func TestTableManagerCreateTable(t *testing.T) {
 }
 
 func TestTableManagerGetLayout(t *testing.T) {
-	transaction := test_util.StartNewTransaction(tableManagerTestName)
+	transaction := newTransactionForTest(t, tableManagerTestName)
 	defer transaction.Rollback()
 	tableManager := NewTableManager(true, transaction)
 

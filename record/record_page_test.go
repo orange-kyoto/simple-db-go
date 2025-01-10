@@ -1,7 +1,6 @@
 package record
 
 import (
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func TestRecordPageFormat(t *testing.T) {
-	transaction := test_util.StartNewTransaction(recordPageTestName)
+	transaction := newTransactionForTest(t, recordPageTestName)
 
 	fileName := "test_record_page_format.table"
 	blockID := transaction.Append(fileName)
@@ -53,7 +52,7 @@ func TestRecordPageFormat(t *testing.T) {
 }
 
 func TestRecordPageFindUsedSlotAfter(t *testing.T) {
-	transaction := test_util.StartNewTransaction(recordPageTestName)
+	transaction := newTransactionForTest(t, recordPageTestName)
 
 	fileName := "test_record_page_find_used_slot_after.table"
 	blockID := transaction.Append(fileName)
@@ -91,7 +90,7 @@ func TestRecordPageFindUsedSlotAfter(t *testing.T) {
 }
 
 func TestRecordPageFindEmptySlotAfter(t *testing.T) {
-	transaction := test_util.StartNewTransaction(recordPageTestName)
+	transaction := newTransactionForTest(t, recordPageTestName)
 
 	fileName := "test_record_page_find_empty_slot_after.table"
 	blockID := transaction.Append(fileName)
@@ -129,7 +128,7 @@ func TestRecordPageFindEmptySlotAfter(t *testing.T) {
 }
 
 func TestRecordPageDelete(t *testing.T) {
-	transaction := test_util.StartNewTransaction(recordPageTestName)
+	transaction := newTransactionForTest(t, recordPageTestName)
 
 	fileName := "test_record_page_delete.table"
 	blockID := transaction.Append(fileName)

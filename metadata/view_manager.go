@@ -35,13 +35,14 @@ func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef types.ViewDef
 	}
 
 	tableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
+	defer tableScan.Close()
+
 	tableScan.Insert()
 	tableScan.SetString("view_name", string(viewName))
 	tableScan.SetString("view_def", string(viewDef))
-	tableScan.Close()
 }
 
-func (vm *ViewManager) GetView(viewName types.ViewName, transaction *transaction.Transaction) (types.ViewDef, error) {
+func (vm *ViewManager) GetViewDef(viewName types.ViewName, transaction *transaction.Transaction) (types.ViewDef, error) {
 	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
 	if err != nil {
 		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.

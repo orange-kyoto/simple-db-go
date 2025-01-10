@@ -4,7 +4,6 @@ import (
 	"path"
 	"simple-db-go/constants"
 	"simple-db-go/record"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestIndexManagerNewIndexManager(t *testing.T) {
-	transaction := test_util.StartNewTransaction(indexManagerTestName)
+	transaction := newTransactionForTest(t, indexManagerTestName)
 	defer transaction.Rollback()
 
 	tableManager := NewTableManager(true, transaction)
@@ -76,7 +75,7 @@ func TestIndexManagerNewIndexManager(t *testing.T) {
 }
 
 func TestIndexManagerGetCreateIndex(t *testing.T) {
-	transaction := test_util.StartNewTransaction(indexManagerTestName)
+	transaction := newTransactionForTest(t, indexManagerTestName)
 	defer transaction.Rollback()
 
 	tableManager := NewTableManager(true, transaction)

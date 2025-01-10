@@ -3,7 +3,6 @@ package metadata
 import (
 	"fmt"
 	"simple-db-go/record"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -12,7 +11,8 @@ import (
 
 func TestStatManagerNewStatManager(t *testing.T) {
 	t.Run("StatManager 初期化時に統計情報の初期値が計算される.", func(t *testing.T) {
-		transaction := test_util.StartNewTransaction(statManagerTestName)
+		// transaction := test_util.StartNewTransaction(statManagerTestName)
+		transaction := newTransactionForTest(t, statManagerTestName)
 		defer transaction.Rollback()
 
 		tableManager := NewTableManager(true, transaction)
@@ -125,7 +125,8 @@ func TestStatManagerGetStatInfo(t *testing.T) {
 	})
 
 	t.Run("GetStatInfo が100回より多く参照されたときに統計情報が計算され直すこと.", func(t *testing.T) {
-		transaction := test_util.StartNewTransaction(statManagerTestName)
+		// transaction := test_util.StartNewTransaction(statManagerTestName)
+		transaction := newTransactionForTest(t, statManagerTestName)
 		defer transaction.Rollback()
 
 		tableManager := NewTableManager(true, transaction)

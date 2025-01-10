@@ -22,9 +22,9 @@ type BufferManager struct {
 }
 
 // NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
-func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
-	bufferPool := make([]*Buffer, 0, numBuffers)
-	for i := 0; i < int(numBuffers); i++ {
+func NewBufferManager(fm *file.FileManager, lm *log.LogManager, bufferPoolSize types.Int) *BufferManager {
+	bufferPool := make([]*Buffer, 0, bufferPoolSize)
+	for i := 0; i < int(bufferPoolSize); i++ {
 		bufferPool = append(bufferPool, NewBuffer(fm, lm))
 	}
 
@@ -33,7 +33,7 @@ func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types
 
 	bm := &BufferManager{
 		bufferPool:   bufferPool,
-		numAvailable: numBuffers,
+		numAvailable: bufferPoolSize,
 		requestChan:  requestChan,
 		closeChan:    closeChan,
 	}
