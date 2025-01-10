@@ -9,20 +9,27 @@ import (
 const tableManagerTestName = "table_manager_test"
 const viewManagerTestName = "view_manager_test"
 const statManagerTestName = "stat_manager_test"
+const indexInfoTestName = "index_info_test"
+const indexManagerTestName = "index_manager_test"
 
 func TestMain(m *testing.M) {
-	test_util.Cleanup(tableManagerTestName)
-	test_util.Cleanup(viewManagerTestName)
-	test_util.Cleanup(statManagerTestName)
+	testNames := []string{
+		tableManagerTestName,
+		viewManagerTestName,
+		statManagerTestName,
+		indexInfoTestName,
+		indexManagerTestName,
+	}
 
-	test_util.StartManagers(tableManagerTestName, 512, 10)
-	test_util.StartManagers(viewManagerTestName, 512, 10)
-	test_util.StartManagers(statManagerTestName, 512, 10)
+	for _, name := range testNames {
+		test_util.Cleanup(name)
+		test_util.StartManagers(name, 512, 10)
+	}
 
 	code := m.Run()
 
-	test_util.Cleanup(tableManagerTestName)
-	test_util.Cleanup(viewManagerTestName)
-	test_util.Cleanup(statManagerTestName)
+	for _, name := range testNames {
+		test_util.Cleanup(name)
+	}
 	os.Exit(code)
 }
