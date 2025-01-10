@@ -194,25 +194,18 @@ func (lm *LogManager) StreamLogs() <-chan RawLogRecord {
 				// もう次のログがなければ処理を終了する
 				break
 			}
-			fmt.Printf("blockID: %+v\n", blockID)
-			fmt.Printf("currentPosition: %d\n", currentPosition)
 
 			// このブロックにはログがないので、次のブロックに移動する
 			// 最新のログから辿れるようにするので、ログファイルないの後ろのブロックから読み込むイメージ
 			if currentPosition == lm.fileManager.BlockSize() {
-				fmt.Printf("Moving to previous block...\n")
 				blockID = file.NewBlockID(blockID.Filename, blockID.BlockNumber-1)
 				moveToBlock(blockID)
-				fmt.Printf("After moving to previous block. currentPosition=%d\n", currentPosition)
-				// ちゃんとここで更新されているっぽい。
 			}
 
 			// 現在位置のログレコードを読み込む
 			logRecord := page.GetBytes(currentPosition)
-			fmt.Printf("--- logRecord: %+v (%s), address: %p ---\n", logRecord, string(logRecord), &logRecord)
 			// 現在位置を更新する
 			currentPosition += constants.Int32ByteSize + types.Int(len(logRecord))
-			fmt.Printf("new currentPosition: %d\n", currentPosition)
 
 			logChan <- logRecord
 		}
