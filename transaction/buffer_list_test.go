@@ -1,9 +1,7 @@
 package transaction
 
 import (
-	"simple-db-go/buffer"
 	"simple-db-go/file"
-	"simple-db-go/log"
 	"simple-db-go/types"
 	"testing"
 
@@ -11,22 +9,12 @@ import (
 )
 
 const (
-	testDirForBufferList     = "test_buffer_list"
-	logFileNameForBufferList = "test_buffer_list.log"
-	blockSizeForBufferList   = 512
+	testDirForBufferList = "test_buffer_list"
 )
 
-func startBufferList() (*file.FileManager, *buffer.BufferManager, *BufferList) {
-	fileManager := file.NewFileManager(testDirForBufferList, blockSizeForBufferList)
-	logManager := log.NewLogManager(fileManager, logFileNameForBufferList)
-	bufferManager := buffer.NewBufferManager(fileManager, logManager, 3)
-	bufferList := NewBufferList(bufferManager)
-
-	return fileManager, bufferManager, bufferList
-}
-
 func TestPinUnpinBuffers(t *testing.T) {
-	fileManager, _, bufferList := startBufferList()
+	bufferList := startBufferListForTest(t)
+	fileManager := file.GetManagerForTest(bufferListTestName)
 
 	// Pin するためのファイルを用意し、ブロックを追加しておく。
 	testFileName := "test_buffer_list.data"

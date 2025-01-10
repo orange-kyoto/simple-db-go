@@ -9,52 +9,15 @@ import (
 	"simple-db-go/log"
 	"simple-db-go/types"
 	"simple-db-go/util"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testDirForRMTest        = "test_recovery_manager"
-	logFileNameForRMTest    = "test_recovery_manager.log"
-	dataFileNameForRMTest   = "test_recovery_manager.data"
-	blockSizeForRMTest      = 512
-	bufferPoolSizeForRMTest = 3
-)
-
-var (
-	fileManagerForRMTest   *file.FileManager
-	logManagerForRMTest    *log.LogManager
-	bufferManagerForRMTest *buffer.BufferManager
-	muForRMTest            sync.Mutex
-)
-
-// このテストでは同じインスタンスを使いたい.
-func startManagersForRecoveryManagerTest() {
-	muForRMTest.Lock()
-	defer muForRMTest.Unlock()
-
-	if fileManagerForRMTest == nil {
-		fileManagerForRMTest = file.NewFileManager(testDirForRMTest, blockSizeForRMTest)
-	}
-	if logManagerForRMTest == nil {
-		logManagerForRMTest = log.NewLogManager(fileManagerForRMTest, logFileNameForRMTest)
-	}
-	if bufferManagerForRMTest == nil {
-		bufferManagerForRMTest = buffer.NewBufferManager(fileManagerForRMTest, logManagerForRMTest, bufferPoolSizeForRMTest)
-	}
-}
-
-// 注意：Transaction の初期化時に RecoveryManager が初期化される.
-func startNewTransactionForRecoveryManagerTest() (*file.FileManager, *log.LogManager, *buffer.BufferManager, *Transaction) {
-	startManagersForRecoveryManagerTest()
-	transaction := NewTransaction(fileManagerForRMTest, logManagerForRMTest, bufferManagerForRMTest)
-	return fileManagerForRMTest, logManagerForRMTest, bufferManagerForRMTest, transaction
-}
-
 func TestRecoveryManagerInitialization(t *testing.T) {
-	fileManager, logManager, _, _ := startNewTransactionForRecoveryManagerTest()
+	startNewTransactionForTest(t, recoveryManagerTestName)
+	fileManager := file.GetManagerForTest(recoveryManagerTestName)
+	logManager := log.GetManagerForTest(recoveryManagerTestName)
 
 	t.Run("RecoveryManager 開始時にログに START レコードが記録される.", func(t *testing.T) {
 		latestLSN, lastSavedLSN := logManager.GetLSN()
@@ -82,25 +45,28 @@ func TestRecoveryManagerInitialization(t *testing.T) {
 		// ファイルに書き込まれていないことを念の為確認する（理解の確認も含めて）
 		// 補足：まだ LogPage に書き込まれただけで、Flush していないから.
 		// 補足：ただし、LogManager の初期化時に boundary だけ記録されている.
-		fileInfo, _ := os.Stat(filepath.Join(testDirForRMTest, logFileNameForRMTest))
+		fileInfo, _ := os.Stat(filepath.Join(recoveryManagerTestName, logFileNameForRMTest))
 		expectedBlockID := file.NewBlockID(logFileNameForRMTest, 0)
-		expectedFilePage := file.NewPage(blockSizeForRMTest)
+		expectedFilePage := file.NewPage(blockSize)
 		fileManager.Read(expectedBlockID, expectedFilePage)
 
-		assert.Equal(t, int64(blockSizeForRMTest), fileInfo.Size(), "ファイルに書き込まれていないが、logManager が最初のブロック分を append している.")
-		assert.Equal(t, types.Int(blockSizeForRMTest), expectedFilePage.GetInt(0), "ファイルに書き込まれていないので、boundary だけが書き込まれている.")
-		assert.Equal(t, make([]byte, blockSizeForRMTest-constants.Int32ByteSize), expectedFilePage.Data[constants.Int32ByteSize:], "boundary 以外は空のままである.")
+		assert.Equal(t, int64(blockSize), fileInfo.Size(), "ファイルに書き込まれていないが、logManager が最初のブロック分を append している.")
+		assert.Equal(t, types.Int(blockSize), expectedFilePage.GetInt(0), "ファイルに書き込まれていないので、boundary だけが書き込まれている.")
+		assert.Equal(t, make([]byte, blockSize-constants.Int32ByteSize), expectedFilePage.Data[constants.Int32ByteSize:], "boundary 以外は空のままである.")
 	})
 }
 
 func TestRecoveryManagerSetInt(t *testing.T) {
-	fileManager, logManager, bufferManager, transaction := startNewTransactionForRecoveryManagerTest()
+	transaction := startNewTransactionForTest(t, recoveryManagerTestName)
+	fileManager := file.GetManagerForTest(recoveryManagerTestName)
+	logManager := log.GetManagerForTest(recoveryManagerTestName)
+	bufferManager := buffer.GetManagerForTest(recoveryManagerTestName)
 	recoveryManager := transaction.recoveryManager
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	oldValue := 79
 	testBlockID := file.NewBlockID(dataFileNameForRMTest, 0)
-	testPage := file.NewPage(blockSizeForRMTest)
+	testPage := file.NewPage(blockSize)
 	testPage.SetInt(2, types.Int(oldValue))
 	fileManager.Write(testBlockID, testPage)
 
@@ -142,13 +108,16 @@ func TestRecoveryManagerSetInt(t *testing.T) {
 }
 
 func TestRecoveryManagerSetString(t *testing.T) {
-	fileManager, logManager, bufferManager, transaction := startNewTransactionForRecoveryManagerTest()
+	transaction := startNewTransactionForTest(t, recoveryManagerTestName)
+	fileManager := file.GetManagerForTest(recoveryManagerTestName)
+	logManager := log.GetManagerForTest(recoveryManagerTestName)
+	bufferManager := buffer.GetManagerForTest(recoveryManagerTestName)
 	recoveryManager := transaction.recoveryManager
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	oldValue := "orange-kyoto"
 	testBlockID := file.NewBlockID(dataFileNameForRMTest, 1)
-	testPage := file.NewPage(blockSizeForRMTest)
+	testPage := file.NewPage(blockSize)
 	testPage.SetString(3, oldValue)
 	fileManager.Write(testBlockID, testPage)
 
@@ -200,7 +169,9 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	// 3. logManager.Flush(lsn)
 	// 	- これでログファイルに書き込まれる. COMMIT も含め、もしまだ書き込まれていないログがあっても書き込まれるはず.
 
-	fileManager, _, bufferManager, transaction := startNewTransactionForRecoveryManagerTest()
+	transaction := startNewTransactionForTest(t, recoveryManagerTestName)
+	fileManager := file.GetManagerForTest(recoveryManagerTestName)
+	bufferManager := buffer.GetManagerForTest(recoveryManagerTestName)
 	recoveryManager := transaction.recoveryManager
 
 	// テスト用の書き換え対象ファイルを準備しておく.
@@ -210,9 +181,9 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	testBlockID1 := file.NewBlockID(dataFileNameForRMTest, 0)
 	testBlockID2 := file.NewBlockID(dataFileNameForRMTest, 1)
 	testBlockID3 := file.NewBlockID(dataFileNameForRMTest, 2)
-	testPage1 := file.NewPage(blockSizeForRMTest)
-	testPage2 := file.NewPage(blockSizeForRMTest)
-	testPage3 := file.NewPage(blockSizeForRMTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
+	testPage3 := file.NewPage(blockSize)
 	testPage1.SetString(0, oldValue1)
 	testPage2.SetString(0, oldValue2)
 	testPage3.SetString(0, oldValue3)
@@ -241,7 +212,7 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	buffer2.SetModified(transaction.transactionNumber, lsn2)
 
 	// 別のトランザクションでも書き換えを行う.
-	_, _, _, transaction2 := startNewTransactionForRecoveryManagerTest()
+	transaction2 := startNewTransactionForTest(t, recoveryManagerTestName)
 	lsn3 := transaction2.recoveryManager.SetString(buffer3, 0, newValue3)
 	buffer3.GetContents().SetString(0, newValue3)
 	buffer3.SetModified(transaction2.transactionNumber, lsn3)
@@ -249,8 +220,8 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	recoveryManager.Commit() // transaction2 はコミットしない.
 
 	t.Run("commit されたトランザクションが Buffer に対して行なった変更がディスクに書き込まれている.", func(t *testing.T) {
-		resultPage1 := file.NewPage(blockSizeForRMTest)
-		resultPage2 := file.NewPage(blockSizeForRMTest)
+		resultPage1 := file.NewPage(blockSize)
+		resultPage2 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID1, resultPage1)
 		fileManager.Read(testBlockID2, resultPage2)
 
@@ -259,7 +230,7 @@ func TestRecoveryManagerCommit(t *testing.T) {
 	})
 
 	t.Run("commit されていないトランザクションが Buffer に対して行なった変更はディスクに書き込まれていない.", func(t *testing.T) {
-		resultPage3 := file.NewPage(blockSizeForRMTest)
+		resultPage3 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID3, resultPage3)
 		assert.Equal(t, "apple", resultPage3.GetString(0), "3つ目のブロックにはまだ apple が書き込まれているべき. BANANA にはなっていない.")
 	})
@@ -268,8 +239,8 @@ func TestRecoveryManagerCommit(t *testing.T) {
 		// NOTE: ファイルに書いてあるものを直接見るべきなので、LogManager から取得するのではなく、FileManager から取得する.
 
 		// 念の為、ブロック1つ分だけ書き込まれていることも確認.
-		fileInfo, _ := os.Stat(filepath.Join(testDirForRMTest, logFileNameForRMTest))
-		expectedFileSize := blockSizeForRMTest
+		fileInfo, _ := os.Stat(filepath.Join(recoveryManagerTestName, logFileNameForRMTest))
+		expectedFileSize := blockSize
 		assert.Equal(t, int64(expectedFileSize), fileInfo.Size(), "ファイルに書き込まれているログは1つ分であるべき")
 
 		// 以下の順番でログが書き込まれているはず:
@@ -285,7 +256,7 @@ func TestRecoveryManagerCommit(t *testing.T) {
 		// さらにログファイルの各ブロックの先頭4bytesには boundary が記録されていることにも注意.
 
 		testLogBlockID := file.NewBlockID(logFileNameForRMTest, 0)
-		testLogPage := file.NewPage(blockSizeForRMTest)
+		testLogPage := file.NewPage(blockSize)
 		fileManager.Read(testLogBlockID, testLogPage)
 
 		// 注意：バイトサイズ記録用の4バイトを追加している.
@@ -297,7 +268,7 @@ func TestRecoveryManagerCommit(t *testing.T) {
 		commitRecordByteSize := 4 + 8
 
 		// 注意: このテストの前からログファイルに書き込まれているものがあるので、その分も考慮する必要がある. これちょっと辛いな...
-		expectedBoundary := blockSizeForRMTest -
+		expectedBoundary := blockSize -
 			// 1つ目のテスト. START レコードのみ.
 			(4 + 8) -
 			// 2つ目のテスト. START x 1, SETINT x 1

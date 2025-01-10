@@ -10,3 +10,7 @@ type RecordID struct {
 func NewRecordID(blockNumber types.BlockNumber, slotNumber SlotNumber) RecordID {
 	return RecordID{blockNumber: blockNumber, slotNumber: slotNumber}
 }
+
+func (ri RecordID) GetBlockNumber() types.BlockNumber {
+	return ri.blockNumber
+}

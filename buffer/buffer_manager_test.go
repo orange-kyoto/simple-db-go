@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"simple-db-go/file"
-	"simple-db-go/log"
 	"simple-db-go/types"
 	"testing"
 	"time"
@@ -12,32 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testDir     = "./test_buffer_manager"
-	logFileName = "test.log"
-	blockSize   = 16
-	numBuffers  = types.Int(3)
-)
-
-var (
-	fileManager   *file.FileManager
-	logManager    *log.LogManager
-	bufferManager *BufferManager
-)
-
-func TestMain(m *testing.M) {
-	os.RemoveAll(testDir)
-	fileManager = file.NewFileManager(testDir, blockSize)
-	logManager = log.NewLogManager(fileManager, logFileName)
-	bufferManager = NewBufferManager(fileManager, logManager, numBuffers)
-	code := m.Run()
-	os.RemoveAll(testDir)
-	os.Exit(code)
-}
-
 func TestPinUnpinBuffer(t *testing.T) {
+	bufferManager := getBufferManagerForTest(t)
+
 	// テスト用のファイルを用意しておく
-	os.WriteFile(filepath.Join(testDir, "test_file"),
+	os.WriteFile(filepath.Join(bufferManagerTestName, "test_file"),
 		[]byte("Test File For Buffer Manager Test. This is a dummy file."),
 		0644)
 	firstBlockID := file.NewBlockID("test_file", 0)

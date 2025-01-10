@@ -9,96 +9,27 @@ import (
 	"simple-db-go/log"
 	"simple-db-go/types"
 	"simple-db-go/util"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-const (
-	testDirForTransactionTest        = "test_transaction"
-	logFileNameForTransactionTest    = "test_transaction.log"
-	dataFileNameForTransactionTest   = "test_transaction.data"
-	blockSizeForTransactionTest      = 512
-	bufferPoolSizeForTransactionTest = 10
-)
-
-var (
-	fileManagerForTransactionTest   *file.FileManager
-	logManagerForTransactionTest    *log.LogManager
-	bufferManagerForTransactionTest *buffer.BufferManager
-	muForTransactionTest            sync.Mutex
-)
-
-func startManagersForTransactionTest() {
-	muForTransactionTest.Lock()
-	defer muForTransactionTest.Unlock()
-
-	if fileManagerForTransactionTest == nil {
-		fileManagerForTransactionTest = file.NewFileManager(testDirForTransactionTest, blockSizeForTransactionTest)
-	}
-	if logManagerForTransactionTest == nil {
-		logManagerForTransactionTest = log.NewLogManager(fileManagerForTransactionTest, logFileNameForTransactionTest)
-	}
-	if bufferManagerForTransactionTest == nil {
-		bufferManagerForTransactionTest = buffer.NewBufferManager(fileManagerForTransactionTest, logManagerForTransactionTest, bufferPoolSizeForTransactionTest)
-	}
-}
-
-func startNewTransaction() (*file.FileManager, *log.LogManager, *buffer.BufferManager, *Transaction) {
-	startManagersForTransactionTest()
-
-	t := NewTransaction(fileManagerForTransactionTest, logManagerForTransactionTest, bufferManagerForTransactionTest)
-	return fileManagerForTransactionTest, logManagerForTransactionTest, bufferManagerForTransactionTest, t
-}
-
-// Recover のテストのため、一度システムがクラッシュしたものと想定し、再起動することをシミュレートする.
-// ここでは単に、manager 系をリセットすることにする.
-func rebootDatabaseForTransactionTest() {
-	muForTransactionTest.Lock()
-	defer muForTransactionTest.Unlock()
-
-	fileManagerForTransactionTest = file.NewFileManager(testDirForTransactionTest, blockSizeForTransactionTest)
-	logManagerForTransactionTest = log.NewLogManager(fileManagerForTransactionTest, logFileNameForTransactionTest)
-	bufferManagerForTransactionTest = buffer.NewBufferManager(fileManagerForTransactionTest, logManagerForTransactionTest, bufferPoolSizeForTransactionTest)
-
-	// うまくないと思うが、一旦ロックテーブルをリセットしておく. 何か上手い仕組みを入れたいところ...
-	lockTableInstance = &LockTable{
-		locks:       make(map[file.BlockID]LockValue),
-		requestChan: make(chan lockTableRequest),
-		closeChan:   make(chan bool),
-	}
-	go lockTableInstance.run()
-}
-
-func cleanup() {
-	os.RemoveAll(testDirForRMTest)
-	os.RemoveAll(testDirForTransactionTest)
-	os.RemoveAll(testDirForBufferList)
-}
-
-func TestMain(m *testing.M) {
-	cleanup()
-	code := m.Run()
-	cleanup()
-	os.Exit(code)
-}
 
 func TestTransactionCommit(t *testing.T) {
 	t.Skip("RecoveryManager 等のテストをしているのでスキップする.")
 }
 
 func TestTransactionGetSetString(t *testing.T) {
-	fileManager, _, _, transaction := startNewTransaction()
+	transaction := startNewTransactionForTest(t, transactionTestName)
+	fileManager := file.GetManagerForTest(transactionTestName)
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	fileName := "test_transaction_get_set_string.data"
 	testBlockID1 := file.NewBlockID(fileName, 0)
 	testBlockID2 := file.NewBlockID(fileName, 1)
 	testBlockID3 := file.NewBlockID(fileName, 2)
-	testPage1 := file.NewPage(blockSizeForTransactionTest)
-	testPage2 := file.NewPage(blockSizeForTransactionTest)
-	testPage3 := file.NewPage(blockSizeForTransactionTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
+	testPage3 := file.NewPage(blockSize)
 	testPage1.SetString(0, "test1")
 	testPage2.SetString(0, "test2")
 	testPage3.SetString(0, "test3")
@@ -122,16 +53,17 @@ func TestTransactionGetSetString(t *testing.T) {
 }
 
 func TestTransactionRollback(t *testing.T) {
-	fileManager, _, _, transaction1 := startNewTransaction()
+	transaction1 := startNewTransactionForTest(t, transactionTestName)
+	fileManager := file.GetManagerForTest(transactionTestName)
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	fileName := "test_transaction_rollback.data"
 	testBlockID1 := file.NewBlockID(fileName, 0)
 	testBlockID2 := file.NewBlockID(fileName, 1)
 	testBlockID3 := file.NewBlockID(fileName, 2)
-	testPage1 := file.NewPage(blockSizeForTransactionTest)
-	testPage2 := file.NewPage(blockSizeForTransactionTest)
-	testPage3 := file.NewPage(blockSizeForTransactionTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
+	testPage3 := file.NewPage(blockSize)
 	testPage1.SetString(0, "test1")
 	testPage2.SetString(0, "test2")
 	testPage3.SetString(0, "test3")
@@ -147,7 +79,7 @@ func TestTransactionRollback(t *testing.T) {
 	transaction1.SetString(testBlockID3, 0, "test3-1", true)
 
 	// 別のトランザクションでも書き換えを行う.
-	_, _, _, transaction2 := startNewTransaction()
+	transaction2 := startNewTransactionForTest(t, transactionTestName)
 	transaction2.Pin(testBlockID2)
 	transaction2.SetString(testBlockID2, 0, "test2-1", true)
 
@@ -164,8 +96,8 @@ func TestTransactionRollback(t *testing.T) {
 
 	t.Run("transaction1 が実行した変更が巻き戻されている.", func(t *testing.T) {
 		// ディスク内のファイルを読み込んで変更が反映されていないことを確認.
-		page1 := file.NewPage(blockSizeForTransactionTest)
-		page3 := file.NewPage(blockSizeForTransactionTest)
+		page1 := file.NewPage(blockSize)
+		page3 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID1, page1)
 		fileManager.Read(testBlockID3, page3)
 
@@ -187,7 +119,7 @@ func TestTransactionRollback(t *testing.T) {
 	})
 
 	t.Run("トランザクション2の変更はディスクに書き込まれ、巻き戻されていない.", func(t *testing.T) {
-		page2 := file.NewPage(blockSizeForTransactionTest)
+		page2 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID2, page2)
 
 		// 変更がディスクに書き込まれていること.
@@ -206,7 +138,7 @@ func TestTransactionRollback(t *testing.T) {
 	t.Run("Commit, Rollback のログが記録されていること.", func(t *testing.T) {
 		logFileBlockSize := fileManager.GetBlockLength(logFileNameForTransactionTest)
 		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, types.BlockNumber(logFileBlockSize-1))
-		latestLogPage := file.NewPage(blockSizeForTransactionTest)
+		latestLogPage := file.NewPage(blockSize)
 		fileManager.Read(latestLogBlockID, latestLogPage)
 
 		boundary := latestLogPage.GetInt(0)
@@ -231,18 +163,21 @@ func TestTransactionRollback(t *testing.T) {
 }
 
 func TestTransactionRecover(t *testing.T) {
-	fileManager, logManager, bufferManager, transaction1 := startNewTransaction()
-	_, _, _, transaction2 := startNewTransaction()
-	_, _, _, transaction3 := startNewTransaction()
+	transaction1 := startNewTransactionForTest(t, transactionTestName)
+	transaction2 := startNewTransactionForTest(t, transactionTestName)
+	transaction3 := startNewTransactionForTest(t, transactionTestName)
+	fileManager := file.GetManagerForTest(transactionTestName)
+	logManager := log.GetManagerForTest(transactionTestName)
+	bufferManager := buffer.GetManagerForTest(transactionTestName)
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	fileName := "test_transaction_recover.data"
 	testBlockID1 := file.NewBlockID(fileName, 0)
 	testBlockID2 := file.NewBlockID(fileName, 1)
 	testBlockID3 := file.NewBlockID(fileName, 2)
-	testPage1 := file.NewPage(blockSizeForTransactionTest)
-	testPage2 := file.NewPage(blockSizeForTransactionTest)
-	testPage3 := file.NewPage(blockSizeForTransactionTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
+	testPage3 := file.NewPage(blockSize)
 	testPage1.SetString(0, "hoge1")
 	testPage2.SetString(0, "fuga2")
 	testPage3.SetString(0, "piyo3")
@@ -273,11 +208,15 @@ func TestTransactionRecover(t *testing.T) {
 
 	// ここで一度システムがクラッシュしたとして、再起動したことをシミュレートする.
 	logManager.Flush(9999)
-	rebootDatabaseForTransactionTest()
+	rebootDatabaseForTransactionTest(t)
+	// マネージャーは取り直す.
+	fileManager = file.GetManagerForTest(transactionTestName)
+	logManager = log.GetManagerForTest(transactionTestName)
+	bufferManager = buffer.GetManagerForTest(transactionTestName)
 
 	t.Run("未完了のトランザクションの変更がディスクに書き込まれていること.", func(t *testing.T) {
-		page1 := file.NewPage(blockSizeForTransactionTest)
-		page3 := file.NewPage(blockSizeForTransactionTest)
+		page1 := file.NewPage(blockSize)
+		page3 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID1, page1)
 		fileManager.Read(testBlockID3, page3)
 
@@ -286,12 +225,12 @@ func TestTransactionRecover(t *testing.T) {
 	})
 
 	// ここでリブートしたと想定し、Recover を実行する.
-	_, _, _, rebootTransaction := startNewTransaction()
+	rebootTransaction := startNewTransactionForTest(t, transactionTestName)
 	rebootTransaction.Recover()
 
 	t.Run("完了していないトランザクションの変更が巻き戻されていること.", func(t *testing.T) {
-		page1 := file.NewPage(blockSizeForTransactionTest)
-		page3 := file.NewPage(blockSizeForTransactionTest)
+		page1 := file.NewPage(blockSize)
+		page3 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID1, page1)
 		fileManager.Read(testBlockID3, page3)
 
@@ -300,7 +239,7 @@ func TestTransactionRecover(t *testing.T) {
 	})
 
 	t.Run("Commitされたトランザクションの変更がディスクに書き込まれていること.", func(t *testing.T) {
-		page2 := file.NewPage(blockSizeForTransactionTest)
+		page2 := file.NewPage(blockSize)
 		fileManager.Read(testBlockID2, page2)
 
 		assert.Equal(t, "FUGA2", page2.GetString(0), "testBlockID2 の変更がディスクに反映されている.")
@@ -310,7 +249,7 @@ func TestTransactionRecover(t *testing.T) {
 		// NOTE: ディスクに既に書き込まれていることを検証するので、logManager.StreamLogs() は使わない.
 		logFileBlockSize := fileManager.GetBlockLength(logFileNameForTransactionTest)
 		latestLogBlockID := file.NewBlockID(logFileNameForTransactionTest, types.BlockNumber(logFileBlockSize-1))
-		latestLogPage := file.NewPage(blockSizeForTransactionTest)
+		latestLogPage := file.NewPage(blockSize)
 		fileManager.Read(latestLogBlockID, latestLogPage)
 
 		boundary := latestLogPage.GetInt(0)
@@ -325,39 +264,41 @@ func TestTransactionRecover(t *testing.T) {
 }
 
 func TestTransactionSize(t *testing.T) {
-	fileManager, _, _, transaction := startNewTransaction()
-	_, _, _, transaction2 := startNewTransaction()
+	transaction1 := startNewTransactionForTest(t, transactionTestName)
+	transaction2 := startNewTransactionForTest(t, transactionTestName)
+	fileManager := file.GetManagerForTest(transactionTestName)
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	fileName := "test_transaction_size.data"
 	testBlockID1 := file.NewBlockID(fileName, 0)
 	testBlockID2 := file.NewBlockID(fileName, 1)
-	testPage1 := file.NewPage(blockSizeForTransactionTest)
-	testPage2 := file.NewPage(blockSizeForTransactionTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
 	testPage1.SetString(0, "test1")
 	testPage2.SetString(0, "test2")
 	fileManager.Write(testBlockID1, testPage1)
 	fileManager.Write(testBlockID2, testPage2)
 
 	t.Run("ファイルのブロックサイズを複数のトランザクションで正しく取得できる(SLockなので).", func(t *testing.T) {
-		result := transaction.Size(fileName)
+		result1 := transaction1.Size(fileName)
 		result2 := transaction2.Size(fileName)
-		fileStat, _ := os.Stat(path.Join(testDirForTransactionTest, fileName))
+		fileStat, _ := os.Stat(path.Join(transactionTestName, fileName))
 
-		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSizeForTransactionTest)), result, "ファイルのサイズが正しく取得できる.")
-		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSizeForTransactionTest)), result2, "ファイルのサイズが正しく取得できる.")
+		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSize)), result1, "ファイルのサイズが正しく取得できる.")
+		assert.Equal(t, types.Int(fileStat.Size()/int64(blockSize)), result2, "ファイルのサイズが正しく取得できる.")
 	})
 }
 
 func TestTransactionAppend(t *testing.T) {
-	fileManager, _, _, transaction := startNewTransaction()
+	transaction := startNewTransactionForTest(t, transactionTestName)
+	fileManager := file.GetManagerForTest(transactionTestName)
 
 	// テスト用の書き換え対象ファイルを準備しておく.
 	fileName := "test_transaction_append.data"
 	testBlockID1 := file.NewBlockID(fileName, 0)
 	testBlockID2 := file.NewBlockID(fileName, 1)
-	testPage1 := file.NewPage(blockSizeForTransactionTest)
-	testPage2 := file.NewPage(blockSizeForTransactionTest)
+	testPage1 := file.NewPage(blockSize)
+	testPage2 := file.NewPage(blockSize)
 	testPage1.SetString(0, "test1")
 	testPage2.SetString(0, "test2")
 	fileManager.Write(testBlockID1, testPage1)
@@ -370,12 +311,12 @@ func TestTransactionAppend(t *testing.T) {
 	})
 
 	t.Run("XLock が獲得されているので、他トランザクションからのファイルサイズの取得がブロックされる.", func(t *testing.T) {
-		_, _, _, transaction2 := startNewTransaction()
+		transaction2 := startNewTransactionForTest(t, transactionTestName)
 		assert.Panics(t, func() { transaction2.Size(fileName) }, "他トランザクションからのファイルサイズの取得がブロックされる.")
 	})
 
 	t.Run("XLock解放後には他トランザクションからファイルサイズの読み取りが可能になる.", func(t *testing.T) {
-		_, _, _, transaction3 := startNewTransaction()
+		transaction3 := startNewTransactionForTest(t, transactionTestName)
 		transaction.Commit()
 		assert.NotPanics(t, func() { transaction3.Size(fileName) }, "他トランザクションからのファイルサイズの取得が可能になる.")
 	})

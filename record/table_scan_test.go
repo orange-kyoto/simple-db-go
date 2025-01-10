@@ -4,7 +4,6 @@ import (
 	"os"
 	"path"
 	"simple-db-go/file"
-	"simple-db-go/test_util"
 	"simple-db-go/types"
 	"testing"
 
@@ -16,14 +15,13 @@ func TestTableScanInitialization(t *testing.T) {
 	layout := NewLayout(schema)
 
 	t.Run("テーブルファイルが空の場合、ブロックが追加される. そのブロックが current block になる.", func(t *testing.T) {
-		tableName := "test_table_scan_initialization_1"
-		fileName := tableName + ".table"
+		tableName := types.TableName("test_table_scan_initialization_1")
+		fileName := string(tableName) + ".table"
 
 		// 事前に cleanup しているのでファイルは無い.
-		_, err := os.Stat(path.Join(tableScanTestName, fileName))
-		assert.True(t, os.IsNotExist(err), "table file should not exist.")
+		assert.NoFileExists(t, path.Join(tableScanTestName, fileName), "table file should not exist.")
 
-		transaction := test_util.StartNewTransaction(tableScanTestName)
+		transaction := newTransactionForTest(t, tableScanTestName)
 		tableScan := NewTableScan(transaction, tableName, layout)
 
 		fileInfo, _ := os.Stat(path.Join(tableScanTestName, fileName))
@@ -39,20 +37,20 @@ func TestTableScanInitialization(t *testing.T) {
 	})
 
 	t.Run("既にテーブルファイルが存在する場合、そのファイルの先頭ブロックが current block になる.", func(t *testing.T) {
-		tableName := "test_table_scan_initialization_2"
-		fileName := tableName + ".table"
+		tableName := types.TableName("test_table_scan_initialization_2")
+		fileName := string(tableName) + ".table"
 
 		// 先にファイルを用意する
-		fileManager, _, _ := test_util.GetManagers(tableScanTestName)
-		testBlockIDs := test_util.PrepareBlockIDs(2, fileName)
-		testPages := test_util.PreparePages(2, fileManager.BlockSize())
+		fileManager := file.GetManagerForTest(tableScanTestName)
+		testBlockIDs := file.PrepareBlockIDs(2, fileName)
+		testPages := file.PreparePages(2, fileManager.BlockSize())
 		testPages[0].SetString(0, "hoge")
 		testPages[1].SetString(0, "fuga")
 		fileManager.Write(testBlockIDs[0], testPages[0])
 		fileManager.Write(testBlockIDs[1], testPages[1])
 		assert.Equal(t, types.Int(2), fileManager.GetBlockLength(fileName), "file should have 2 blocks.")
 
-		transaction := test_util.StartNewTransaction(tableScanTestName)
+		transaction := newTransactionForTest(t, tableScanTestName)
 		tableScan := NewTableScan(transaction, tableName, layout)
 
 		assert.Equal(t, types.Int(2), fileManager.GetBlockLength(fileName), "TableScan 初期化後もブロックサイズは2のまま.")
@@ -66,8 +64,8 @@ func TestTableScanClose(t *testing.T) {
 	layout := NewLayout(schema)
 
 	t.Run("Close実行後に、RecordPage に読み込んでいたブロックIDに対応するバッファーがUnpinされる.", func(t *testing.T) {
-		transaction := test_util.StartNewTransaction(tableScanTestName)
-		tableName := "test_table_scan_close"
+		transaction := newTransactionForTest(t, tableScanTestName)
+		tableName := types.TableName("test_table_scan_close")
 		tableScan := NewTableScan(transaction, tableName, layout)
 
 		assert.Equal(t, types.Int(7), transaction.AvailableBuffers(), "前のテストを含め、合計3つPinされているので利用可能なバッファーは7.")
@@ -82,13 +80,13 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_move_to_record_id"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_move_to_record_id")
+	fileName := string(tableName) + ".table"
 
 	// 先にファイルを用意する
-	fileManager, _, _ := test_util.GetManagers(tableScanTestName)
-	testBlocks := test_util.PrepareBlockIDs(3, fileName)
-	testPages := test_util.PreparePages(3, fileManager.BlockSize())
+	fileManager := file.GetManagerForTest(tableScanTestName)
+	testBlocks := file.PrepareBlockIDs(3, fileName)
+	testPages := file.PreparePages(3, fileManager.BlockSize())
 	testPages[0].SetString(0, "hoge")
 	testPages[1].SetString(0, "fuga")
 	testPages[2].SetString(0, "piyo")
@@ -97,7 +95,7 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 	fileManager.Write(testBlocks[2], testPages[2])
 	assert.Equal(t, types.Int(3), fileManager.GetBlockLength(fileName), "file should have 3 blocks.")
 
-	transaction := test_util.StartNewTransaction(tableScanTestName)
+	transaction := newTransactionForTest(t, tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
 
 	t.Run("指定した record id に移動できる.", func(t *testing.T) {
@@ -141,7 +139,7 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 
 		// 一度 commit し、別のトランザクションから読めることを確認.
 		transaction.Commit()
-		transaction2 := test_util.StartNewTransaction(tableScanTestName)
+		transaction2 := newTransactionForTest(t, tableScanTestName)
 		tableScan2 := NewTableScan(transaction2, tableName, layout)
 		tableScan2.MoveToRecordID(recordID1)
 
@@ -156,10 +154,10 @@ func TestTableScanBeforeFirst(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_before_first"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_before_first")
+	fileName := string(tableName) + ".table"
 
-	transaction := test_util.StartNewTransaction(tableScanTestName)
+	transaction := newTransactionForTest(t, tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
 	// ファイルのブロックを2つまで増やしておく.
 	transaction.Append(fileName)
@@ -175,10 +173,10 @@ func TestTableScanInsert(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_insert"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_insert")
+	fileName := string(tableName) + ".table"
 
-	transaction := test_util.StartNewTransaction(tableScanTestName)
+	transaction := newTransactionForTest(t, tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
 	// ファイルのブロックを2つまで増やしておく.
 	transaction.Append(fileName)
@@ -224,10 +222,10 @@ func TestTableScanDelete(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_delete"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_delete")
+	fileName := string(tableName) + ".table"
 
-	transaction := test_util.StartNewTransaction(tableScanTestName)
+	transaction := newTransactionForTest(t, tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
 	// ファイルのブロックを2つまで増やしておく.
 	transaction.Append(fileName)
@@ -248,10 +246,10 @@ func TestTableScanNext(t *testing.T) {
 	schema := buildTestTableSchema()
 	layout := NewLayout(schema)
 
-	tableName := "test_table_scan_next"
-	fileName := tableName + ".table"
+	tableName := types.TableName("test_table_scan_next")
+	fileName := string(tableName) + ".table"
 
-	transaction := test_util.StartNewTransaction(tableScanTestName)
+	transaction := newTransactionForTest(t, tableScanTestName)
 	tableScan := NewTableScan(transaction, tableName, layout)
 	// ファイルのブロックを2つまで増やしておく.
 	transaction.Append(fileName)

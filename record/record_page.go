@@ -1,6 +1,7 @@
 package record
 
 import (
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -25,22 +26,22 @@ func (rp *RecordPage) GetBlockID() file.BlockID {
 	return rp.blockID
 }
 
-func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName FieldName) types.Int {
+func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName types.FieldName) types.Int {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	return rp.transaction.GetInt(rp.blockID, types.Int(fieldOffset))
 }
 
-func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName FieldName) string {
+func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName types.FieldName) string {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	return rp.transaction.GetString(rp.blockID, types.Int(fieldOffset))
 }
 
-func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName FieldName, value types.Int) {
+func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName types.FieldName, value types.Int) {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), value, true)
 }
 
-func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName FieldName, value string) {
+func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName types.FieldName, value string) {
 	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), value, true)
 }
@@ -58,11 +59,11 @@ func (rp *RecordPage) Format() {
 		for _, fieldName := range schema.Fields() {
 			fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
 
-			if schema.FieldType(fieldName) == INTEGER {
+			if schema.FieldType(fieldName) == constants.INTEGER {
 				rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), types.Int(0), false)
 			}
 
-			if schema.FieldType(fieldName) == VARCHAR {
+			if schema.FieldType(fieldName) == constants.VARCHAR {
 				rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), "", false)
 			}
 		}
@@ -114,7 +115,7 @@ func (rp *RecordPage) getSlotOffset(slotNumber SlotNumber) SlotOffset {
 	return SlotOffset(types.Int(slotNumber) * rp.layout.GetSlotSize())
 }
 
-func (rp *RecordPage) getFieldOffsetInPage(slotNumber SlotNumber, fieldName FieldName) FieldOffsetInPage {
+func (rp *RecordPage) getFieldOffsetInPage(slotNumber SlotNumber, fieldName types.FieldName) FieldOffsetInPage {
 	slotOffset := rp.getSlotOffset(slotNumber)
 	fieldOffsetInSlot := rp.layout.GetOffset(fieldName)
 	return calcFieldOffsetInPage(slotOffset, fieldOffsetInSlot)

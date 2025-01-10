@@ -2,7 +2,9 @@ package record
 
 import (
 	"os"
-	"simple-db-go/test_util"
+	"simple-db-go/config"
+	"simple-db-go/transaction"
+	"simple-db-go/util"
 	"testing"
 )
 
@@ -12,15 +14,13 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	test_util.Cleanup(recordPageTestName)
-	test_util.Cleanup(tableScanTestName)
-	test_util.StartManagers(recordPageTestName, 512, 10)
-	test_util.StartManagers(tableScanTestName, 512, 10)
+	util.Cleanup(recordPageTestName)
+	util.Cleanup(tableScanTestName)
 
 	code := m.Run()
 
-	test_util.Cleanup(recordPageTestName)
-	test_util.Cleanup(tableScanTestName)
+	util.Cleanup(recordPageTestName)
+	util.Cleanup(tableScanTestName)
 	os.Exit(code)
 }
 
@@ -31,4 +31,9 @@ func buildTestTableSchema() *Schema {
 	schema.AddStringField("name", 10)
 	schema.AddIntField("age")
 	return schema
+}
+
+func newTransactionForTest(t *testing.T, testName string) *transaction.Transaction {
+	config := config.NewDBConfigForTest(t, testName, 512, 10)
+	return transaction.NewTransactionForTest(testName, config)
 }

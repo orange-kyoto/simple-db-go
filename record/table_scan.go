@@ -17,11 +17,11 @@ type TableScan struct {
 	currentSlotNumber SlotNumber
 }
 
-func NewTableScan(transaction *transaction.Transaction, tableName string, layout *Layout) *TableScan {
+func NewTableScan(transaction *transaction.Transaction, tableName types.TableName, layout *Layout) *TableScan {
 	tableScan := &TableScan{
 		transaction:       transaction,
 		layout:            layout,
-		fileName:          tableName + ".table",
+		fileName:          string(tableName) + ".table",
 		currentSlotNumber: NULL_SLOT_NUMBER,
 	}
 
@@ -42,7 +42,7 @@ func (ts *TableScan) Close() {
 	}
 }
 
-func (ts *TableScan) HasField(fieldName FieldName) bool {
+func (ts *TableScan) HasField(fieldName types.FieldName) bool {
 	return ts.layout.schema.HasField(fieldName)
 }
 
@@ -94,25 +94,25 @@ func (ts *TableScan) Insert() {
 	}
 }
 
-func (ts *TableScan) GetInt(fieldName FieldName) types.Int {
+func (ts *TableScan) GetInt(fieldName types.FieldName) types.Int {
 	return ts.recordPage.GetInt(ts.currentSlotNumber, fieldName)
 }
 
-func (ts *TableScan) GetString(fieldName FieldName) string {
+func (ts *TableScan) GetString(fieldName types.FieldName) string {
 	return ts.recordPage.GetString(ts.currentSlotNumber, fieldName)
 }
 
 // TODO: Chapter8 で実装する.
 // `Constant` は int, string の抽象化だそう.
-// func (ts *TableScan) GetValue(fieldName FieldName) Constant {}
+// func (ts *TableScan) GetValue(fieldName types.FieldName) Constant {}
 
 // NOTE: UpdateScan interface の要件.
-func (ts *TableScan) SetInt(fieldName FieldName, val types.Int) {
+func (ts *TableScan) SetInt(fieldName types.FieldName, val types.Int) {
 	ts.recordPage.SetInt(ts.currentSlotNumber, fieldName, val)
 }
 
 // NOTE: UpdateScan interface の要件.
-func (ts *TableScan) SetString(fieldName FieldName, val string) {
+func (ts *TableScan) SetString(fieldName types.FieldName, val string) {
 	ts.recordPage.SetString(ts.currentSlotNumber, fieldName, val)
 }
 

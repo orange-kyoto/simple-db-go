@@ -2,7 +2,7 @@ package log
 
 import (
 	"os"
-	"path/filepath"
+	"path"
 	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
@@ -12,37 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	testDir         = "./testlog"
-	testLogFileName = "test.log"
-	blockSize       = 16
-)
-
-func testLogFilePath() string {
-	return filepath.Join(testDir, testLogFileName)
-}
-
-func cleanLogFile() {
-	os.RemoveAll(testDir)
-}
-
-var logManager *LogManager
-
-func TestMain(m *testing.M) {
-	cleanLogFile()
-	fileManager := file.NewFileManager(testDir, blockSize)
-	logManager = NewLogManager(fileManager, testLogFileName)
-
-	code := m.Run()
-
-	cleanLogFile()
-	logManager.Close()
-	os.Exit(code)
-}
-
 func TestInitLogManagerWithoutLogFile(t *testing.T) {
+	logManager := getLogManagerForTest(t)
+
 	t.Run("ログファイルが期待したファイルサイズで存在すること.", func(t *testing.T) {
-		logFileInfo, err := os.Stat(testLogFilePath())
+		logFileInfo, err := os.Stat(path.Join(logManagerTestName, logManagerTestName+".log"))
 		assert.True(t, err == nil, "ログファイルが作成されていること")
 		assert.Equal(t, int64(blockSize), logFileInfo.Size(), "ログファイルのサイズがブロックサイズと一致していること")
 	})
@@ -53,7 +27,7 @@ func TestInitLogManagerWithoutLogFile(t *testing.T) {
 	})
 
 	t.Run("currentBlockID が正しく初期化されていること.", func(t *testing.T) {
-		expectedBlockID := file.NewBlockID(testLogFileName, 0)
+		expectedBlockID := file.NewBlockID(logManagerTestName+".log", 0)
 		assert.Equal(t, expectedBlockID, logManager.currentBlockID, "currentBlockID が 0 であること")
 	})
 
@@ -67,6 +41,8 @@ func TestInitLogManagerWithoutLogFile(t *testing.T) {
 
 // ログレコードを追加するテスト. 余白がある場合
 func TestAppendLogRecordWithRoom(t *testing.T) {
+	logManager := getLogManagerForTest(t)
+
 	// LogPage はまだ余白があるので、収まる範囲でログレコードを追加する
 	testRecordBytes := []byte("test") // 4 bytes
 	lsn := logManager.Append(testRecordBytes)
@@ -80,7 +56,7 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 	})
 
 	t.Run("logManager.currentBlockIDが先頭ブロックになっていること.", func(t *testing.T) {
-		expectedBlockID := file.NewBlockID(testLogFileName, 0)
+		expectedBlockID := file.NewBlockID(logManagerTestName+".log", 0)
 		assert.Equal(t, expectedBlockID, logManager.currentBlockID, "currentBlockID が 0 であること")
 	})
 
@@ -92,7 +68,7 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 
 	t.Run("lm.logPage のboundary以外のバイト列が書き込んだバイト列に一致していること", func(t *testing.T) {
 		expectedPage := file.NewPage(blockSize)
-		expectedBoundary := blockSize - (int(constants.Int32ByteSize) + len(testRecordBytes)) // バイト列の長さが先頭に付与されるので.
+		expectedBoundary := blockSize - (constants.Int32ByteSize + util.Len(testRecordBytes)) // バイト列の長さが先頭に付与されるので.
 		expectedPage.SetInt(0, types.Int(expectedBoundary))
 		expectedPage.SetBytes(types.Int(expectedBoundary), testRecordBytes)
 
@@ -100,13 +76,13 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 	})
 
 	t.Run("ディスク上のログファイルは初期化時のままで、追加されたログはまだディスクに書き込まれていないこと.", func(t *testing.T) {
-		fileInfo, _ := os.Stat(testLogFilePath())
+		fileInfo, _ := os.Stat(path.Join(logManagerTestName, logManagerTestName+".log"))
 		assert.Equal(t, int64(blockSize), fileInfo.Size(), "ログファイルのサイズがブロックサイズと一致していること")
 
-		logBlockID := file.NewBlockID(testLogFileName, 0)
+		logBlockID := file.NewBlockID(logManagerTestName+".log", 0)
 
 		expectedWrittenLogPage := file.NewPage(blockSize)
-		expectedWrittenLogPage.SetInt(0, types.Int(blockSize))
+		expectedWrittenLogPage.SetInt(0, blockSize)
 
 		writtenLogPage := file.NewPage(blockSize)
 		logManager.fileManager.Read(logBlockID, writtenLogPage)
@@ -118,6 +94,7 @@ func TestAppendLogRecordWithRoom(t *testing.T) {
 // ログレコードを追加するテスト. 余白がない場合
 func TestAppendLogRecordWithoutRoom(t *testing.T) {
 	// 注意：前のテストで、すでに1つレコードが追加されていることに注意。まだ LogPage にあるだけで、ディスクには書き込まれていない.
+	logManager := getLogManagerForTest(t)
 
 	record1 := []byte("test")  // 4 bytes これがすでに書き込まれている.
 	record2 := []byte("test2") // 5 bytes こちらはまだ書き込まれていない.
@@ -138,7 +115,7 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 	})
 
 	t.Run("logManager.currentBlockIDは2つ目のブロックになっていること.", func(t *testing.T) {
-		expectedBlockID := file.NewBlockID(testLogFileName, 1)
+		expectedBlockID := file.NewBlockID(logManagerTestName+".log", 1)
 		assert.Equal(t, expectedBlockID, logManager.currentBlockID, "currentBlockID が 1 になること")
 	})
 
@@ -148,7 +125,7 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 		expectedWrittenLogPage.SetInt(0, expectedBoundary)
 		expectedWrittenLogPage.SetBytes(expectedBoundary, record1)
 
-		blockID := file.NewBlockID(testLogFileName, 0) // 先頭ブロックに書き込まれているはず.
+		blockID := file.NewBlockID(logManagerTestName+".log", 0) // 先頭ブロックに書き込まれているはず.
 		expectedWrittenLogPage = file.NewPage(blockSize)
 		logManager.fileManager.Read(blockID, expectedWrittenLogPage)
 
@@ -158,6 +135,7 @@ func TestAppendLogRecordWithoutRoom(t *testing.T) {
 
 func TestStreamLogs(t *testing.T) {
 	// 注意：前のテストで、すでに1つレコードが追加されていることに注意。まだ LogPage にあるだけで、ディスクには書き込まれていない.
+	logManager := getLogManagerForTest(t)
 
 	record1 := []byte("test")  // 4 bytes これがすでに書き込まれている.
 	record2 := []byte("test2") // 5 bytes これもすでに書き込まれている.

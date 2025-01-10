@@ -5,6 +5,7 @@ import (
 	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/log"
+	"simple-db-go/logger"
 	"simple-db-go/types"
 	"time"
 )
@@ -22,9 +23,9 @@ type BufferManager struct {
 }
 
 // NOTE: シングルトンにすることを検討したが、テストが複雑になりそうなのと、あくまで学習用のアプリケーションなので、特に複雑な管理はしない。
-func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types.Int) *BufferManager {
-	bufferPool := make([]*Buffer, 0, numBuffers)
-	for i := 0; i < int(numBuffers); i++ {
+func NewBufferManager(fm *file.FileManager, lm *log.LogManager, bufferPoolSize types.Int) *BufferManager {
+	bufferPool := make([]*Buffer, 0, bufferPoolSize)
+	for i := 0; i < int(bufferPoolSize); i++ {
 		bufferPool = append(bufferPool, NewBuffer(fm, lm))
 	}
 
@@ -33,7 +34,7 @@ func NewBufferManager(fm *file.FileManager, lm *log.LogManager, numBuffers types
 
 	bm := &BufferManager{
 		bufferPool:   bufferPool,
-		numAvailable: numBuffers,
+		numAvailable: bufferPoolSize,
 		requestChan:  requestChan,
 		closeChan:    closeChan,
 	}
@@ -50,7 +51,7 @@ func (bm *BufferManager) run() {
 	for {
 		select {
 		case req := <-bm.requestChan:
-			fmt.Printf("BufferManager received request. req=%+v, type=%T\n", req, req)
+			logger.Debugf("BufferManager received request. req=%+v, type=%T", req, req)
 			req.resolve(bm)
 		case <-bm.closeChan:
 			// ここでするべきことってなんだろう？
@@ -99,7 +100,7 @@ func (bm *BufferManager) Unpin(buffer *Buffer) {
 }
 
 func (bm *BufferManager) Pin(blockID file.BlockID) *Buffer {
-	fmt.Printf("Call Pin. bm.numAvailable=%d, blockID=%+v\n", bm.numAvailable, blockID)
+	logger.Debugf("Call Pin. bm.numAvailable=%d, blockID=%+v", bm.numAvailable, blockID)
 	replyChan := make(chan *Buffer)
 	waitChan := make(chan bool)
 	defer close(replyChan)
@@ -194,15 +195,15 @@ func (bm *BufferManager) notifyAll() {
 			// ここでは簡単に、recover でpanicを回避するだけにとどめる.
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Printf("[BufferManager.notifyAll] Panic recovered: channel is already closed. waitChan=%+v\n", c)
+					logger.Debugf("Panic recovered: channel is already closed. waitChan=%+v", c)
 				}
 			}()
 
 			select {
 			case c <- true:
-				fmt.Printf("[BufferManager.notifyAll] Succeeded sending a message to waitChan. waitChan=%+v\n", waitChan)
+				logger.Debugf("Succeeded sending a message to waitChan. waitChan=%+v", waitChan)
 			default:
-				fmt.Printf("[BufferManager.notifyAll] channel is already closed. waitChan=%+v\n", waitChan)
+				logger.Debugf("Failed sending a message to waitChan. waitChan=%+v", waitChan)
 			}
 		}(waitChan)
 	}
