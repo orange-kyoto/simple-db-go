@@ -1,6 +1,7 @@
 package record
 
 import (
+	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -43,7 +44,7 @@ func (ts *TableScan) Close() {
 }
 
 func (ts *TableScan) HasField(fieldName types.FieldName) bool {
-	return ts.layout.schema.HasField(fieldName)
+	return ts.layout.GetSchema().HasField(fieldName)
 }
 
 // current record を最初のレコードの直前にセットする.
@@ -72,8 +73,8 @@ func (ts *TableScan) Next() bool {
 
 // current record を指定された RecordID に移動する.
 func (ts *TableScan) MoveToRecordID(recordID RecordID) {
-	ts.moveToBlock(recordID.blockNumber)
-	ts.currentSlotNumber = recordID.slotNumber
+	ts.moveToBlock(recordID.GetBlockNumber())
+	ts.currentSlotNumber = recordID.GetSlotNumber()
 }
 
 // current record のブロックからスタートし、新しいレコードをファイルに追加する.
@@ -94,26 +95,44 @@ func (ts *TableScan) Insert() {
 	}
 }
 
-func (ts *TableScan) GetInt(fieldName types.FieldName) types.Int {
+func (ts *TableScan) GetInt(fieldName types.FieldName) (types.Int, error) {
 	return ts.recordPage.GetInt(ts.currentSlotNumber, fieldName)
 }
 
-func (ts *TableScan) GetString(fieldName types.FieldName) string {
+func (ts *TableScan) GetString(fieldName types.FieldName) (string, error) {
 	return ts.recordPage.GetString(ts.currentSlotNumber, fieldName)
 }
 
-// TODO: Chapter8 で実装する.
-// `Constant` は int, string の抽象化だそう.
-// func (ts *TableScan) GetValue(fieldName types.FieldName) Constant {}
+func (ts *TableScan) GetValue(fieldName types.FieldName) (Constant, error) {
+	schema := ts.layout.GetSchema()
+	fieldType, err := schema.FieldType(fieldName)
+	if err != nil {
+		return nil, err
+	}
 
-// NOTE: UpdateScan interface の要件.
-func (ts *TableScan) SetInt(fieldName types.FieldName, val types.Int) {
-	ts.recordPage.SetInt(ts.currentSlotNumber, fieldName, val)
+	if fieldType == constants.INTEGER {
+		value, err := ts.GetInt(fieldName)
+		if err != nil {
+			return nil, err
+		}
+		return NewIntConstant(value), nil
+	}
+
+	value, err := ts.GetString(fieldName)
+	if err != nil {
+		return nil, err
+	}
+	return NewStrConstant(value), nil
 }
 
 // NOTE: UpdateScan interface の要件.
-func (ts *TableScan) SetString(fieldName types.FieldName, val string) {
-	ts.recordPage.SetString(ts.currentSlotNumber, fieldName, val)
+func (ts *TableScan) SetInt(fieldName types.FieldName, val types.Int) error {
+	return ts.recordPage.SetInt(ts.currentSlotNumber, fieldName, val)
+}
+
+// NOTE: UpdateScan interface の要件.
+func (ts *TableScan) SetString(fieldName types.FieldName, val string) error {
+	return ts.recordPage.SetString(ts.currentSlotNumber, fieldName, val)
 }
 
 // TODO: Chapter8 で実装する.

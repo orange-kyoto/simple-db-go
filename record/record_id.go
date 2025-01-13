@@ -14,3 +14,7 @@ func NewRecordID(blockNumber types.BlockNumber, slotNumber SlotNumber) RecordID 
 func (ri RecordID) GetBlockNumber() types.BlockNumber {
 	return ri.blockNumber
 }
+
+func (ri RecordID) GetSlotNumber() SlotNumber {
+	return ri.slotNumber
+}

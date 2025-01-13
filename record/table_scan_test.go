@@ -125,17 +125,27 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 		tableScan.SetInt("age", 12)
 
 		assert.Equal(t, recordID1, tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
-		assert.Equal(t, types.Int(123), tableScan.GetInt("id"), "id は 123 であるべし.")
-		assert.Equal(t, "orange", tableScan.GetString("name"), "name は orange であるべし.")
-		assert.Equal(t, types.Int(12), tableScan.GetInt("age"), "age は 12 であるべし.")
+		idValue, idError := tableScan.GetInt("id")
+		nameValue, nameError := tableScan.GetString("name")
+		ageValue, ageError := tableScan.GetInt("age")
+		if assert.NoError(t, idError) && assert.NoError(t, nameError) && assert.NoError(t, ageError) {
+			assert.Equal(t, types.Int(123), idValue, "id は 123 であるべし.")
+			assert.Equal(t, "orange", nameValue, "name は orange であるべし.")
+			assert.Equal(t, types.Int(12), ageValue, "age は 12 であるべし.")
+		}
 
 		// 一度 recordID2 に移動して再度戻った後も値が読めることを確認.
 		tableScan.MoveToRecordID(recordID2)
 		tableScan.MoveToRecordID(recordID1)
 		assert.Equal(t, recordID1, tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.(移動後)")
-		assert.Equal(t, types.Int(123), tableScan.GetInt("id"), "id は 123 であるべし.(移動後)")
-		assert.Equal(t, "orange", tableScan.GetString("name"), "name は orange であるべし.(移動後)")
-		assert.Equal(t, types.Int(12), tableScan.GetInt("age"), "age は 12 であるべし.(移動後)")
+		idValue, idError = tableScan.GetInt("id")
+		nameValue, nameError = tableScan.GetString("name")
+		ageValue, ageError = tableScan.GetInt("age")
+		if assert.NoError(t, idError) && assert.NoError(t, nameError) && assert.NoError(t, ageError) {
+			assert.Equal(t, types.Int(123), idValue, "id は 123 であるべし.(移動後)")
+			assert.Equal(t, "orange", nameValue, "name は orange であるべし.(移動後)")
+			assert.Equal(t, types.Int(12), ageValue, "age は 12 であるべし.(移動後)")
+		}
 
 		// 一度 commit し、別のトランザクションから読めることを確認.
 		transaction.Commit()
@@ -144,9 +154,14 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 		tableScan2.MoveToRecordID(recordID1)
 
 		assert.Equal(t, recordID1, tableScan2.GetCurrentRecordID(), "current record id は recordID1 であるべし.(別トランザクション)")
-		assert.Equal(t, types.Int(123), tableScan2.GetInt("id"), "id は 123 であるべし.(別トランザクション)")
-		assert.Equal(t, "orange", tableScan2.GetString("name"), "name は orange であるべし.(別トランザクション)")
-		assert.Equal(t, types.Int(12), tableScan2.GetInt("age"), "age は 12 であるべし.(別トランザクション)")
+		idValue2, idError2 := tableScan2.GetInt("id")
+		nameValue2, nameError2 := tableScan2.GetString("name")
+		ageValue2, ageError2 := tableScan2.GetInt("age")
+		if assert.NoError(t, idError2) && assert.NoError(t, nameError2) && assert.NoError(t, ageError2) {
+			assert.Equal(t, types.Int(123), idValue2, "id は 123 であるべし.(別トランザクション)")
+			assert.Equal(t, "orange", nameValue2, "name は orange であるべし.(別トランザクション)")
+			assert.Equal(t, types.Int(12), ageValue2, "age は 12 であるべし.(別トランザクション)")
+		}
 	})
 }
 

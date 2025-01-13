@@ -1,6 +1,7 @@
 package record
 
 import (
+	"fmt"
 	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/types"
@@ -18,7 +19,7 @@ import (
 type Layout struct {
 	schema   *Schema
 	offsets  map[types.FieldName]types.FieldOffsetInSlot
-	slotSize types.Int
+	slotSize types.SlotSize
 }
 
 // テーブルが新規作成された際のコンストラクタ.
@@ -31,19 +32,24 @@ func NewLayout(schema *Schema) *Layout {
 
 	for _, fieldName := range schema.Fields() {
 		offsets[fieldName] = types.FieldOffsetInSlot(flagPos)
-		flagPos += getLengthInBytes(schema, fieldName)
+		// schema 自身から生成したフィールドの値を取得しているのでエラーは発生し得ない. 単に panic する.
+		length, err := getLengthInBytes(schema, fieldName)
+		if err != nil {
+			panic(fmt.Sprintf("NewLayout で予期せぬエラーが発生しました. schema=%+v, fieldName=%+v, err=%+v", schema, fieldName, err))
+		}
+		flagPos += length
 	}
 
 	return &Layout{
 		schema:   schema,
 		offsets:  offsets,
-		slotSize: flagPos,
+		slotSize: types.SlotSize(flagPos),
 	}
 }
 
 // 既存テーブルに対してのコンストラクタ.
 // 既に計算された値をベースに Layout を計算する.
-func NewLayoutWith(schema *Schema, offsets map[types.FieldName]types.FieldOffsetInSlot, slotSize types.Int) *Layout {
+func NewLayoutWith(schema *Schema, offsets map[types.FieldName]types.FieldOffsetInSlot, slotSize types.SlotSize) *Layout {
 	return &Layout{
 		schema:   schema,
 		offsets:  offsets,
@@ -55,23 +61,32 @@ func (l *Layout) GetSchema() *Schema {
 	return l.schema
 }
 
-func (l *Layout) GetOffset(fieldName types.FieldName) types.FieldOffsetInSlot {
-	offset, _ := l.offsets[fieldName]
-	return offset
+func (l *Layout) GetOffset(fieldName types.FieldName) (types.FieldOffsetInSlot, error) {
+	offset, exists := l.offsets[fieldName]
+	if !exists {
+		return 0, &UnknownFieldError{l.schema, fieldName}
+	}
+	return offset, nil
 }
 
-func (l *Layout) GetSlotSize() types.Int {
+func (l *Layout) GetSlotSize() types.SlotSize {
 	return l.slotSize
 }
 
-func getLengthInBytes(schema *Schema, fieldName types.FieldName) types.Int {
-	fieldType := schema.FieldType(fieldName)
+func getLengthInBytes(schema *Schema, fieldName types.FieldName) (types.Int, error) {
+	fieldType, err := schema.FieldType(fieldName)
+	if err != nil {
+		return 0, err
+	}
 
 	if fieldType == constants.INTEGER {
-		return constants.Int32ByteSize
+		return constants.Int32ByteSize, nil
 	}
 
 	// fieldType == VARCHAR
-	length := types.Int(schema.Length(fieldName))
-	return file.MaxLength(length)
+	length, err := schema.Length(fieldName)
+	if err != nil {
+		return 0, err
+	}
+	return file.MaxLength(types.Int(length)), nil
 }
