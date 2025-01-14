@@ -28,18 +28,12 @@ func NewViewManager(isNew bool, tableManager *TableManager, transaction *transac
 }
 
 func (vm *ViewManager) CreateView(viewName types.ViewName, viewDef types.ViewDef, transaction *transaction.Transaction) {
-	layout, err := vm.tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
-	if err != nil {
-		// 初期起動時に必ずカタログのレイアウトが登録されているはずなので、ここは panic にしておく.
-		panic(fmt.Sprintf("ビューの作成に失敗しました. err=%+v", err))
+	row := ViewCatalogRow{
+		ViewName: viewName,
+		ViewDef:  viewDef,
 	}
 
-	tableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
-	defer tableScan.Close()
-
-	tableScan.Insert()
-	tableScan.SetString("view_name", string(viewName))
-	tableScan.SetString("view_def", string(viewDef))
+	WriteViewCatalogRow(row, transaction, vm.tableManager)
 }
 
 func (vm *ViewManager) GetViewDef(viewName types.ViewName, transaction *transaction.Transaction) (types.ViewDef, error) {
@@ -53,9 +47,9 @@ func (vm *ViewManager) GetViewDef(viewName types.ViewName, transaction *transact
 	defer tableScan.Close()
 
 	for tableScan.Next() {
-		if tableScan.GetString("view_name") == string(viewName) {
-			viewDef := types.ViewDef(tableScan.GetString("view_def"))
-			return viewDef, nil
+		row := ReadViewCatalogRow(tableScan)
+		if row.ViewName == viewName {
+			return row.ViewDef, nil
 		}
 	}
 

@@ -58,26 +58,21 @@ func (sm *StatManager) refreshStatistics(transaction *transaction.Transaction) {
 	sm.tableStats = make(map[types.TableName]*StatInfo)
 	sm.numCalls = 0
 
-	tableCatalogLayout, err := sm.tableManager.GetLayout(TABLE_CATALOG_TABLE_NAME, transaction)
-
-	if err != nil {
-		// table_catalog は初期起動時に存在するはずなので、このエラーは異常系.
-		panic(fmt.Sprintf("統計情報の更新に失敗しました。table_catalogテーブルのレイアウトが存在しません. err=%+v", err))
-	}
-
+	tableCatalogLayout := sm.tableManager.GetTableCatalogLayout()
 	tableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
 	defer tableScan.Close()
 
 	for tableScan.Next() {
-		tableName := types.TableName(tableScan.GetString("table_name"))
-		layout, err := sm.tableManager.GetLayout(tableName, transaction)
+		row := ReadTableCatalogRow(tableScan)
+
+		layout, err := sm.tableManager.GetLayout(row.TableName, transaction)
 		if err != nil {
 			// 単にエラーログを出力するだけにする.
-			fmt.Printf("統計情報の更新の際、テーブルのレイアウト取得に失敗しました. tableName=%s, err=%+v", tableName, err)
+			fmt.Printf("統計情報の更新の際、テーブルのレイアウト取得に失敗しました. tableName=%s, err=%+v", row.TableName, err)
 			continue
 		}
-		statInfo := sm.calcTableStats(tableName, layout, transaction)
-		sm.tableStats[tableName] = statInfo
+		statInfo := sm.calcTableStats(row.TableName, layout, transaction)
+		sm.tableStats[row.TableName] = statInfo
 	}
 }
 

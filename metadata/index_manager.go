@@ -58,12 +58,15 @@ func (im *IndexManager) GetIndexInfo(tableName types.TableName, transaction *tra
 	defer tableScan.Close()
 
 	for tableScan.Next() {
-		if tableScan.GetString("table_name") == string(tableName) {
-			indexName := types.IndexName(tableScan.GetString("index_name"))
-			fieldName := types.FieldName(tableScan.GetString("field_name"))
+		row := ReadIndexCatalogRow(tableScan)
+
+		if row.TableName == tableName {
 			statInfo := im.statManager.GetStatInfo(tableName, tableLayout, transaction)
-			indexInfo := NewIndexInfo(indexName, fieldName, tableLayout.GetSchema(), transaction, statInfo)
-			result[fieldName] = indexInfo
+			indexInfo, err := NewIndexInfo(row.IndexName, row.FieldName, tableLayout.GetSchema(), transaction, statInfo)
+			if err != nil {
+				return nil, err
+			}
+			result[row.FieldName] = indexInfo
 		}
 	}
 

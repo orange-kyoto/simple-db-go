@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"fmt"
 	"simple-db-go/constants"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
@@ -47,63 +48,58 @@ func NewTableManager(isNew bool, transaction *transaction.Transaction) *TableMan
 func (tm *TableManager) CreateTable(tableName types.TableName, schema *record.Schema, transaction *transaction.Transaction) {
 	layout := record.NewLayout(schema)
 
-	// table_catalog というテーブルに、テーブルカタログの情報を登録している.
-	// 1行だけ登録.
-	tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tm.tableCatalogLayout)
-	tableCatalogTableScan.Insert()
-	tableCatalogTableScan.SetString("table_name", string(tableName))
-	tableCatalogTableScan.SetInt("slot_size", layout.GetSlotSize())
-	tableCatalogTableScan.Close()
+	WriteTableCatalogRow(transaction, tm, TableCatalogRow{TableName: tableName, SlotSize: layout.GetSlotSize()})
 
-	// field_catalog というテーブルに、各フィールドのメタデータを登録している.
-	// こちらはフィールド数分登録.
-	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tm.fieldCatalogLayout)
+	rows := []FieldCatalogRow{}
 	for _, fieldName := range schema.Fields() {
-		fieldCatalogTableScan.Insert()
-		fieldCatalogTableScan.SetString("table_name", string(tableName))
-		fieldCatalogTableScan.SetString("field_name", string(fieldName))
-		fieldCatalogTableScan.SetInt("type", types.Int(schema.FieldType(fieldName)))
-		fieldCatalogTableScan.SetInt("length", types.Int(schema.Length(fieldName)))
-		fieldCatalogTableScan.SetInt("offset", types.Int(layout.GetOffset(fieldName)))
+		// schema 自身から生成したフィールドの値を取得しているのでエラーは発生し得ない。単に panic する.
+		fieldType, err := schema.FieldType(fieldName)
+		if err != nil {
+			panic(fmt.Sprintf("TableManager.CreateTable で予期せぬエラーが発生しました. schema=%+v, fieldName=%+v, err=%+v", schema, fieldName, err))
+		}
+
+		fieldLength, err := schema.Length(fieldName)
+		if err != nil {
+			panic(fmt.Sprintf("TableManager.CreateTable で予期せぬエラーが発生しました. schema=%+v, fieldName=%+v, err=%+v", schema, fieldName, err))
+		}
+
+		fieldOffset, err := layout.GetOffset(fieldName)
+		if err != nil {
+			panic(fmt.Sprintf("TableManager.CreateTable で予期せぬエラーが発生しました. layout=%+v, fieldName=%+v, err=%+v", layout, fieldName, err))
+		}
+
+		rows = append(rows, FieldCatalogRow{TableName: tableName, FieldName: fieldName, Type: fieldType, Length: fieldLength, Offset: fieldOffset})
 	}
-	fieldCatalogTableScan.Close()
+	WriteFieldCatalogRows(transaction, tm, rows)
 }
 
 func (tm *TableManager) GetLayout(tableName types.TableName, transaction *transaction.Transaction) (*record.Layout, error) {
-	tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tm.tableCatalogLayout)
 
-	slotSize := types.Int(-1)
-	for tableCatalogTableScan.Next() {
-		if tableCatalogTableScan.GetString("table_name") == string(tableName) {
-			slotSize = tableCatalogTableScan.GetInt("slot_size")
-			break
-		}
-	}
-	tableCatalogTableScan.Close()
-
-	if slotSize == types.Int(-1) {
-		return nil, TableCatalogNotFoundError{TableName: tableName}
+	tableCatalogRow, err := ReadTableCatalogRowFor(tableName, transaction, tm)
+	if err != nil {
+		return nil, err
 	}
 
 	schema := record.NewSchema()
 	offsets := make(map[types.FieldName]types.FieldOffsetInSlot)
-	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tm.fieldCatalogLayout)
 
-	for fieldCatalogTableScan.Next() {
-		if fieldCatalogTableScan.GetString("table_name") == string(tableName) {
-			fieldName := types.FieldName(fieldCatalogTableScan.GetString("field_name"))
-			fieldType := types.FieldType(fieldCatalogTableScan.GetInt("type"))
-			fieldLength := types.FieldLength(fieldCatalogTableScan.GetInt("length"))
-			fieldOffset := types.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset"))
-			offsets[fieldName] = fieldOffset
-			schema.AddField(fieldName, fieldType, fieldLength)
-		}
-	}
-	fieldCatalogTableScan.Close()
-
-	if len(schema.Fields()) == 0 {
+	fieldCatalogRows := ReadFieldCatalogRowsFor(tableName, transaction, tm)
+	if len(fieldCatalogRows) == 0 {
 		return nil, FieldCatalogNotFoundError{TableName: tableName}
 	}
 
-	return record.NewLayoutWith(schema, offsets, slotSize), nil
+	for _, row := range fieldCatalogRows {
+		offsets[row.FieldName] = row.Offset
+		schema.AddField(row.FieldName, row.Type, row.Length)
+	}
+
+	return record.NewLayoutWith(schema, offsets, tableCatalogRow.SlotSize), nil
+}
+
+func (tm *TableManager) GetTableCatalogLayout() *record.Layout {
+	return tm.tableCatalogLayout
+}
+
+func (tm *TableManager) GetFieldCatalogLayout() *record.Layout {
+	return tm.fieldCatalogLayout
 }

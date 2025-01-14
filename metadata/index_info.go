@@ -23,7 +23,7 @@ func NewIndexInfo(
 	tableSchema *record.Schema,
 	transaction *transaction.Transaction,
 	statInfo *StatInfo,
-) *IndexInfo {
+) (*IndexInfo, error) {
 	indexInfo := &IndexInfo{
 		indexName:   indexName,
 		fieldName:   fieldName,
@@ -32,9 +32,13 @@ func NewIndexInfo(
 		statInfo:    statInfo,
 	}
 
-	indexInfo.indexLayout = indexInfo.createIndexLayout()
+	indexLayout, err := indexInfo.createIndexLayout()
+	if err != nil {
+		return nil, err
+	}
 
-	return indexInfo
+	indexInfo.indexLayout = indexLayout
+	return indexInfo, nil
 }
 
 // インデックスを捜索するのに必要なブロックアクセス数.
@@ -68,16 +72,24 @@ func (ii *IndexInfo) GetDistinctValues(fieldName types.FieldName) types.Int {
 func (ii *IndexInfo) Open() {}
 
 // インデックスのレイアウトを計算する.
-func (ii *IndexInfo) createIndexLayout() *record.Layout {
+func (ii *IndexInfo) createIndexLayout() (*record.Layout, error) {
 	indexSchema := record.NewSchema()
 	indexSchema.AddIntField("block")
 	indexSchema.AddIntField("id")
 
-	if ii.tableSchema.FieldType(ii.fieldName) == constants.INTEGER {
+	fieldType, err := ii.tableSchema.FieldType(ii.fieldName)
+	if err != nil {
+		return nil, err
+	}
+
+	if fieldType == constants.INTEGER {
 		indexSchema.AddIntField("data_val")
 	} else {
-		fieldLength := ii.tableSchema.Length(ii.fieldName)
+		fieldLength, err := ii.tableSchema.Length(ii.fieldName)
+		if err != nil {
+			return nil, err
+		}
 		indexSchema.AddStringField("data_val", fieldLength)
 	}
-	return record.NewLayout(indexSchema)
+	return record.NewLayout(indexSchema), nil
 }
