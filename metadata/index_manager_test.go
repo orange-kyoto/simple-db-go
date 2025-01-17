@@ -35,10 +35,7 @@ func TestIndexManagerNewIndexManager(t *testing.T) {
 
 			actualRows := make([]TableCatalogRow, 0)
 			for tableScan.Next() {
-				actualRows = append(
-					actualRows,
-					TableCatalogRow{TableName: types.TableName(tableScan.GetString("table_name")), SlotSize: types.SlotSize(tableScan.GetInt("slot_size"))},
-				)
+				actualRows = append(actualRows, ReadTableCatalogRow(tableScan))
 			}
 			expectedRow := TableCatalogRow{TableName: INDEX_CATALOG_TABLE_NAME, SlotSize: 64}
 
@@ -52,16 +49,7 @@ func TestIndexManagerNewIndexManager(t *testing.T) {
 
 			actualRows := make([]FieldCatalogRow, 0)
 			for tableScan.Next() {
-				actualRows = append(
-					actualRows,
-					FieldCatalogRow{
-						TableName: types.TableName(tableScan.GetString("table_name")),
-						FieldName: types.FieldName(tableScan.GetString("field_name")),
-						Type:      types.FieldType(tableScan.GetInt("type")),
-						Length:    types.FieldLength(tableScan.GetInt("length")),
-						Offset:    types.FieldOffsetInSlot(tableScan.GetInt("offset")),
-					},
-				)
+				actualRows = append(actualRows, ReadFieldCatalogRow(tableScan))
 			}
 			expectedRows := []FieldCatalogRow{
 				{TableName: INDEX_CATALOG_TABLE_NAME, FieldName: "index_name", Type: constants.VARCHAR, Length: 16, Offset: 4},
@@ -109,14 +97,7 @@ func TestIndexManagerGetCreateIndex(t *testing.T) {
 
 			actualRows := make([]IndexCatalogRow, 0)
 			for tableScan.Next() {
-				actualRows = append(
-					actualRows,
-					IndexCatalogRow{
-						IndexName: types.IndexName(tableScan.GetString("index_name")),
-						TableName: types.TableName(tableScan.GetString("table_name")),
-						FieldName: types.FieldName(tableScan.GetString("field_name")),
-					},
-				)
+				actualRows = append(actualRows, ReadIndexCatalogRow(tableScan))
 			}
 			expectedRows := []IndexCatalogRow{
 				{IndexName: testIndexName1, TableName: testTableName1, FieldName: "id"},

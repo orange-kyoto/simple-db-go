@@ -31,14 +31,24 @@ func (s *Schema) AddStringField(fieldName types.FieldName, length types.FieldLen
 	s.AddField(fieldName, constants.VARCHAR, length)
 }
 
-func (s *Schema) Add(fieldName types.FieldName, schema Schema) {
-	fieldType := schema.FieldType(fieldName)
-	fieldLength := schema.Length(fieldName)
+func (s *Schema) Add(fieldName types.FieldName, schema *Schema) error {
+	fieldType, err := schema.FieldType(fieldName)
+	if err != nil {
+		return err
+	}
+
+	fieldLength, err := schema.Length(fieldName)
+	if err != nil {
+		return err
+	}
+
 	s.AddField(fieldName, fieldType, fieldLength)
+	return nil
 }
 
-func (s *Schema) AddAll(schema Schema) {
+func (s *Schema) AddAll(schema *Schema) {
 	for _, fieldName := range schema.Fields() {
+		// schema.Fields() から取得した field に対して操作するので、エラーは発生しないはず.
 		s.Add(fieldName, schema)
 	}
 }
@@ -56,10 +66,34 @@ func (s *Schema) HasField(fieldName types.FieldName) bool {
 	return false
 }
 
-func (s *Schema) FieldType(fieldName types.FieldName) types.FieldType {
-	return s.fieldInfos[fieldName].fieldType
+func (s *Schema) FieldType(fieldName types.FieldName) (types.FieldType, error) {
+	info, exists := s.fieldInfos[fieldName]
+	if !exists {
+		return 0, &UnknownFieldError{s, fieldName}
+	}
+	return info.fieldType, nil
 }
 
-func (s *Schema) Length(fieldName types.FieldName) types.FieldLength {
-	return s.fieldInfos[fieldName].length
+func (s *Schema) Length(fieldName types.FieldName) (types.FieldLength, error) {
+	info, exists := s.fieldInfos[fieldName]
+	if !exists {
+		return 0, &UnknownFieldError{s, fieldName}
+	}
+	return info.length, nil
+}
+
+func (s *Schema) IsIntField(fieldName types.FieldName) (bool, error) {
+	fieldType, err := s.FieldType(fieldName)
+	if err != nil {
+		return false, err
+	}
+	return fieldType == constants.INTEGER, nil
+}
+
+func (s *Schema) IsStringField(fieldName types.FieldName) (bool, error) {
+	fieldType, err := s.FieldType(fieldName)
+	if err != nil {
+		return false, err
+	}
+	return fieldType == constants.VARCHAR, nil
 }

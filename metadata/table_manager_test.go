@@ -30,10 +30,7 @@ func TestTableManagerInitialization(t *testing.T) {
 		assert.True(t, tableCatalogTableScan.HasField("slot_size"), "slot_size フィールドが存在しているはず.")
 
 		// table_catalog には２行登録されているはず。
-		tests := []struct {
-			tableName string
-			slotSize  types.Int
-		}{
+		tests := []TableCatalogRow{
 			// table_name: 4+16, slot_size: 4, flag: 4
 			{TABLE_CATALOG_TABLE_NAME, 28},
 			// table_name: 4+16, field_name: 4+16, type: 4, length: 4, offset: 4, flag: 4
@@ -42,9 +39,10 @@ func TestTableManagerInitialization(t *testing.T) {
 
 		for _, test := range tests {
 			exists := tableCatalogTableScan.Next()
-			assert.Truef(t, exists, "テーブルカタログにレコードが登録されているはず. table_name=%s\n", test.tableName)
-			assert.Equalf(t, test.tableName, tableCatalogTableScan.GetString("table_name"), "table_name が期待した値であるはず. table_name=%s\n", test.tableName)
-			assert.Equalf(t, test.slotSize, tableCatalogTableScan.GetInt("slot_size"), "slot_size が期待した値であるはず. table_name=%s\n", test.tableName)
+			assert.Truef(t, exists, "テーブルカタログにレコードが登録されているはず. table_name=%s\n", test.TableName)
+
+			actualRow := ReadTableCatalogRow(tableCatalogTableScan)
+			assert.Equalf(t, test, actualRow, "テーブルカタログに期待したレコードが登録されているはず. table_name=%s\n", test.TableName)
 		}
 
 		assert.False(t, tableCatalogTableScan.Next(), "テーブルカタログには２行しか登録されていないはず.")
@@ -59,13 +57,7 @@ func TestTableManagerInitialization(t *testing.T) {
 		assert.True(t, fieldCatalogTableScan.HasField("length"), "length フィールドが存在しているはず.")
 		assert.True(t, fieldCatalogTableScan.HasField("offset"), "offset フィールドが存在しているはず.")
 
-		tests := []struct {
-			tableName string
-			fieldName types.FieldName
-			fieldType types.FieldType
-			length    types.FieldLength
-			offset    types.FieldOffsetInSlot
-		}{
+		tests := []FieldCatalogRow{
 			// 注意：INTEGER フィールドは固定長であり、length は使わないので全て0としている.
 			// table_catalog テーブルのフィールド情報
 			{TABLE_CATALOG_TABLE_NAME, "table_name", constants.VARCHAR, 16, 4},
@@ -80,12 +72,10 @@ func TestTableManagerInitialization(t *testing.T) {
 
 		for _, test := range tests {
 			exists := fieldCatalogTableScan.Next()
-			assert.Truef(t, exists, "フィールドカタログにレコードが登録されているはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.tableName, fieldCatalogTableScan.GetString("table_name"), "table_name が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.fieldName, types.FieldName(fieldCatalogTableScan.GetString("field_name")), "field_name が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.fieldType, types.FieldType(fieldCatalogTableScan.GetInt("type")), "type が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.length, types.FieldLength(fieldCatalogTableScan.GetInt("length")), "length が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
-			assert.Equalf(t, test.offset, types.FieldOffsetInSlot(fieldCatalogTableScan.GetInt("offset")), "offset が期待した値であるはず. table_name=%s, field_name=%s\n", test.tableName, test.fieldName)
+			assert.Truef(t, exists, "フィールドカタログにレコードが登録されているはず. table_name=%s, field_name=%s\n", test.TableName, test.FieldName)
+
+			actualRow := ReadFieldCatalogRow(fieldCatalogTableScan)
+			assert.Equalf(t, test, actualRow, "フィールドカタログに期待したレコードが登録されているはず. table_name=%s, field_name=%s\n", test.TableName, test.FieldName)
 		}
 
 		assert.False(t, fieldCatalogTableScan.Next(), "フィールドカタログには7行しか登録されていないはず.")

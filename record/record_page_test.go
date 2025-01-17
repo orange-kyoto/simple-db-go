@@ -39,9 +39,14 @@ func TestRecordPageFormat(t *testing.T) {
 			assert.Equalf(t, types.Int(0), transaction.GetInt(blockID, ageFieldOffset), "slot %d's age is 0", slotNumber)
 
 			// レコードページで実装するメソッドでも同じ結果になることを確認する.
-			assert.Equalf(t, types.Int(0), recordPage.GetInt(slotNumber, "id"), "slot %d's id is 0", slotNumber)
-			assert.Equalf(t, "", recordPage.GetString(slotNumber, "name"), "slot %d's name is empty", slotNumber)
-			assert.Equalf(t, types.Int(0), recordPage.GetInt(slotNumber, "age"), "slot %d's age is 0", slotNumber)
+			idValue, idError := recordPage.GetInt(slotNumber, "id")
+			nameValue, nameError := recordPage.GetString(slotNumber, "name")
+			ageValue, ageError := recordPage.GetInt(slotNumber, "age")
+			if assert.NoError(t, idError) && assert.NoError(t, nameError) && assert.NoError(t, ageError) {
+				assert.Equalf(t, types.Int(0), idValue, "slot %d's id is 0", slotNumber)
+				assert.Equalf(t, "", nameValue, "slot %d's name is empty", slotNumber)
+				assert.Equalf(t, types.Int(0), ageValue, "slot %d's age is 0", slotNumber)
+			}
 		}
 
 		// 512 / 26 = 19.692... = 19個スロットがあるはず.

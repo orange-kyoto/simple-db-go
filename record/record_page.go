@@ -1,6 +1,7 @@
 package record
 
 import (
+	"fmt"
 	"simple-db-go/constants"
 	"simple-db-go/file"
 	"simple-db-go/transaction"
@@ -26,24 +27,38 @@ func (rp *RecordPage) GetBlockID() file.BlockID {
 	return rp.blockID
 }
 
-func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName types.FieldName) types.Int {
-	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	return rp.transaction.GetInt(rp.blockID, types.Int(fieldOffset))
+func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName types.FieldName) (types.Int, error) {
+	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
+	if err != nil {
+		return 0, err
+	}
+	return rp.transaction.GetInt(rp.blockID, types.Int(fieldOffset)), nil
 }
 
-func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName types.FieldName) string {
-	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
-	return rp.transaction.GetString(rp.blockID, types.Int(fieldOffset))
+func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName types.FieldName) (string, error) {
+	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
+	if err != nil {
+		return "", err
+	}
+	return rp.transaction.GetString(rp.blockID, types.Int(fieldOffset)), nil
 }
 
-func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName types.FieldName, value types.Int) {
-	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
+func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName types.FieldName, value types.Int) error {
+	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
+	if err != nil {
+		return err
+	}
 	rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), value, true)
+	return nil
 }
 
-func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName types.FieldName, value string) {
-	fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
+func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName types.FieldName, value string) error {
+	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
+	if err != nil {
+		return err
+	}
 	rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), value, true)
+	return nil
 }
 
 // このレコードページ内の全てのスロットを初期化する.
@@ -57,13 +72,25 @@ func (rp *RecordPage) Format() {
 		// 各フィールドの初期値を設定する.
 		schema := rp.layout.GetSchema()
 		for _, fieldName := range schema.Fields() {
-			fieldOffset := rp.getFieldOffsetInPage(slotNumber, fieldName)
+			fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
+			if err != nil {
+				// ここの fieldName は schema からとっているので、必ず存在するはず.
+				// エラーになること自体が異常なので、単に panic する.
+				panic(fmt.Sprintf("RecordPage.Format で予期せぬエラーが発生しました. record_page=%+v, err=%+v", rp, err))
+			}
 
-			if schema.FieldType(fieldName) == constants.INTEGER {
+			fieldType, err := schema.FieldType(fieldName)
+			if err != nil {
+				// ここの fieldName は schema からとっているので、必ず存在するはず.
+				// エラーになること自体が異常なので、単に panic する.
+				panic(fmt.Sprintf("RecordPage.Format で予期せぬエラーが発生しました. record_page=%+v, err=%+v", rp, err))
+			}
+
+			if fieldType == constants.INTEGER {
 				rp.transaction.SetInt(rp.blockID, types.Int(fieldOffset), types.Int(0), false)
 			}
 
-			if schema.FieldType(fieldName) == constants.VARCHAR {
+			if fieldType == constants.VARCHAR {
 				rp.transaction.SetString(rp.blockID, types.Int(fieldOffset), "", false)
 			}
 		}
@@ -112,11 +139,14 @@ func (rp *RecordPage) isValidSlot(slotNumber SlotNumber) bool {
 }
 
 func (rp *RecordPage) getSlotOffset(slotNumber SlotNumber) SlotOffset {
-	return SlotOffset(types.Int(slotNumber) * rp.layout.GetSlotSize())
+	return SlotOffset(types.Int(slotNumber) * types.Int(rp.layout.GetSlotSize()))
 }
 
-func (rp *RecordPage) getFieldOffsetInPage(slotNumber SlotNumber, fieldName types.FieldName) FieldOffsetInPage {
+func (rp *RecordPage) getFieldOffsetInPage(slotNumber SlotNumber, fieldName types.FieldName) (FieldOffsetInPage, error) {
 	slotOffset := rp.getSlotOffset(slotNumber)
-	fieldOffsetInSlot := rp.layout.GetOffset(fieldName)
-	return calcFieldOffsetInPage(slotOffset, fieldOffsetInSlot)
+	fieldOffsetInSlot, err := rp.layout.GetOffset(fieldName)
+	if err != nil {
+		return 0, err
+	}
+	return calcFieldOffsetInPage(slotOffset, fieldOffsetInSlot), nil
 }
