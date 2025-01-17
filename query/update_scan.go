@@ -8,9 +8,13 @@ import (
 type UpdateScan interface {
 	Scan
 
-	SetInt(fieldName types.FieldName, value types.Int)
-	SetString(fieldName types.FieldName, value string)
-	SetValue(fieldName types.FieldName, value Constant)
+	// 存在しないフィールドを指定されたらエラーを返す.
+	SetInt(fieldName types.FieldName, value types.Int) error
+	// 存在しないフィールドを指定されたらエラーを返す.
+	SetString(fieldName types.FieldName, value string) error
+	// 存在しないフィールドを指定されたらエラーを返す.
+	SetValue(fieldName types.FieldName, value record.Constant) error
+
 	Insert()
 	Delete()
 	GetCurrentRecordID() record.RecordID
