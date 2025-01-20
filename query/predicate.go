@@ -19,6 +19,10 @@ func NewPredicateWith(term *Term) *Predicate {
 	return &Predicate{terms: []*Term{term}}
 }
 
+func NewPredicateFrom(terms []*Term) *Predicate {
+	return &Predicate{terms: terms}
+}
+
 func (p *Predicate) ConjoinWith(other Predicate) {
 	p.terms = append(p.terms, other.terms...)
 }
@@ -92,8 +96,8 @@ func (p *Predicate) EquatesWithFieldName(fieldName types.FieldName) (types.Field
 
 func (p *Predicate) ToString() string {
 	termStrings := make([]string, len(p.terms))
-	for _, termStr := range termStrings {
-		termStrings = append(termStrings, termStr)
+	for _, term := range p.terms {
+		termStrings = append(termStrings, term.ToString())
 	}
 	return strings.Join(termStrings, " AND ")
 }
