@@ -76,7 +76,6 @@ func TestConcurrencyManagerLock(t *testing.T) {
 	})
 
 	t.Run("他のConcurrencyManagerでSLockが獲得されていた際にXLockがブロックされ、その間にロックが解放されると、ロックが獲得できる.", func(t *testing.T) {
-		t.Parallel()
 		cm1 := NewConcurrencyManager()
 		cm2 := NewConcurrencyManager()
 		blockID := file.NewBlockID("test_concurrency_manager_7", 0)
