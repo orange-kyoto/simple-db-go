@@ -139,14 +139,14 @@ func TestParserParseDelete(t *testing.T) {
 		{
 			`DELETE FROM users;`,
 			&data.DeleteData{
-				TableName: types.TableName("users"),
+				TableName: "users",
 				Predicate: nil,
 			},
 		},
 		{
 			`delete from orders where id = 1`,
 			&data.DeleteData{
-				TableName: types.TableName("orders"),
+				TableName: "orders",
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("id"),
@@ -158,7 +158,7 @@ func TestParserParseDelete(t *testing.T) {
 		{
 			`delete from menus WHERE id = 1 AND name = 'fuga'`,
 			&data.DeleteData{
-				TableName: types.TableName("menus"),
+				TableName: "menus",
 				Predicate: query.NewPredicateFrom(
 					[]*query.Term{
 						query.NewTerm(
@@ -194,8 +194,8 @@ func TestParserParseModify(t *testing.T) {
 		{
 			`UPDATE users SET name = 'hoge';`,
 			&data.ModifyData{
-				TableName: types.TableName("users"),
-				FieldName: types.FieldName("name"),
+				TableName: "users",
+				FieldName: "name",
 				NewValue:  query.NewConstExpression(record.NewStrConstant("hoge")),
 				Predicate: nil,
 			},
@@ -203,8 +203,8 @@ func TestParserParseModify(t *testing.T) {
 		{
 			`update orders set quantity = 10 WHERE id = 1`,
 			&data.ModifyData{
-				TableName: types.TableName("orders"),
-				FieldName: types.FieldName("quantity"),
+				TableName: "orders",
+				FieldName: "quantity",
 				NewValue:  query.NewConstExpression(record.NewIntConstant(10)),
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
@@ -217,8 +217,8 @@ func TestParserParseModify(t *testing.T) {
 		{
 			`update menus set tag = 'piyo' WHERE id = 1 and name = 'fuga'`,
 			&data.ModifyData{
-				TableName: types.TableName("menus"),
-				FieldName: types.FieldName("tag"),
+				TableName: "menus",
+				FieldName: "tag",
 				NewValue:  query.NewConstExpression(record.NewStrConstant("piyo")),
 				Predicate: query.NewPredicateFrom(
 					[]*query.Term{
@@ -241,6 +241,43 @@ func TestParserParseModify(t *testing.T) {
 		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
 			assert.IsTypef(t, &data.ModifyData{}, result, "[i=%d] result が *ModifyData であること.", i)
 			assert.Equalf(t, test.expected, result, "[i=%d] ModifyData が期待通りであること.", i)
+		}
+	}
+}
+
+func TestParserParseCreateTable(t *testing.T) {
+	parser := NewParser()
+
+	tests := []struct {
+		sql      string
+		expected *data.CreateTableData
+	}{
+		{
+			`CREATE TABLE users (id INT, name VARCHAR(255));`,
+			func() *data.CreateTableData {
+				schema := record.NewSchema()
+				schema.AddIntField("id")
+				schema.AddStringField("name", 255)
+				return &data.CreateTableData{TableName: "users", Schema: schema}
+			}(),
+		},
+		{
+			`CREATE TABLE orders (id INT, name VARCHAR(255), quantity INT);`,
+			func() *data.CreateTableData {
+				schema := record.NewSchema()
+				schema.AddIntField("id")
+				schema.AddStringField("name", 255)
+				schema.AddIntField("quantity")
+				return &data.CreateTableData{TableName: "orders", Schema: schema}
+			}(),
+		},
+	}
+
+	for i, test := range tests {
+		result, err := parser.Parse(test.sql)
+		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
+			assert.IsTypef(t, &data.CreateTableData{}, result, "[i=%d] result が *CreateTableData であること.", i)
+			assert.Equalf(t, test.expected, result, "[i=%d] CreateTableData が期待通りであること.", i)
 		}
 	}
 }
