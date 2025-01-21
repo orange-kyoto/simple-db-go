@@ -3,6 +3,7 @@ package metadata
 import (
 	"path"
 	"simple-db-go/constants"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -30,7 +31,7 @@ func TestIndexManagerNewIndexManager(t *testing.T) {
 
 		t.Run("table_catalog テーブルに期待するレコードが入っていること.", func(t *testing.T) {
 			tableCatalogLayout, _ := tableManager.GetLayout(TABLE_CATALOG_TABLE_NAME, transaction)
-			tableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
+			tableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
 			defer tableScan.Close()
 
 			actualRows := make([]TableCatalogRow, 0)
@@ -44,7 +45,7 @@ func TestIndexManagerNewIndexManager(t *testing.T) {
 
 		t.Run("field_catalog テーブルに期待するレコードが入っていること.", func(t *testing.T) {
 			fieldCatalogLayout, _ := tableManager.GetLayout(FIELD_CATALOG_TABLE_NAME, transaction)
-			tableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, fieldCatalogLayout)
+			tableScan := query.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, fieldCatalogLayout)
 			defer tableScan.Close()
 
 			actualRows := make([]FieldCatalogRow, 0)
@@ -92,7 +93,7 @@ func TestIndexManagerGetCreateIndex(t *testing.T) {
 
 		t.Run("インデックスカタログテーブルに期待するレコードが入っていること.", func(t *testing.T) {
 			indexCatalogLayout, _ := tableManager.GetLayout(INDEX_CATALOG_TABLE_NAME, transaction)
-			tableScan := record.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, indexCatalogLayout)
+			tableScan := query.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, indexCatalogLayout)
 			defer tableScan.Close()
 
 			actualRows := make([]IndexCatalogRow, 0)

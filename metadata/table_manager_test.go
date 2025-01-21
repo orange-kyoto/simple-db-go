@@ -3,6 +3,7 @@ package metadata
 import (
 	"path"
 	"simple-db-go/constants"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -24,7 +25,7 @@ func TestTableManagerInitialization(t *testing.T) {
 	tableManager := NewTableManager(true, transaction)
 
 	t.Run("isNew = true で呼ばれた場合はテーブルカタログテーブルが作られ、期待したレコードが登録されている.", func(t *testing.T) {
-		tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
+		tableCatalogTableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
 
 		assert.True(t, tableCatalogTableScan.HasField("table_name"), "table_name フィールドが存在しているはず.")
 		assert.True(t, tableCatalogTableScan.HasField("slot_size"), "slot_size フィールドが存在しているはず.")
@@ -49,7 +50,7 @@ func TestTableManagerInitialization(t *testing.T) {
 	})
 
 	t.Run("isNew = true で呼ばれた場合はフィールドカタログテーブルが作られ、期待したレコードが登録されている.", func(t *testing.T) {
-		fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
+		fieldCatalogTableScan := query.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
 
 		assert.True(t, fieldCatalogTableScan.HasField("table_name"), "table_name フィールドが存在しているはず.")
 		assert.True(t, fieldCatalogTableScan.HasField("field_name"), "field_name フィールドが存在しているはず.")

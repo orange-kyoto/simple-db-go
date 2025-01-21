@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -26,7 +27,7 @@ func TestStatManagerNewStatManager(t *testing.T) {
 		testTableSchema.AddStringField("B", 7)
 		tableManager.CreateTable(testTableName, testTableSchema, transaction)
 		testTableLayout, _ := tableManager.GetLayout(testTableName, transaction)
-		testTableScan := record.NewTableScan(transaction, testTableName, testTableLayout)
+		testTableScan := query.NewTableScan(transaction, testTableName, testTableLayout)
 		defer testTableScan.Close()
 		for i := types.Int(0); i < 777; i++ {
 			testTableScan.Insert()

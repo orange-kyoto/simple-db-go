@@ -36,16 +36,16 @@ func (t *Term) AppliesTo(schema *record.Schema) bool {
 // Query Planner の助けになるメソッド.
 // いつインデックスを使うべきかを判断するために使う.
 // 詳細は Chapter15 で.
-func (t *Term) EquatesWithConstant(fieldName types.FieldName) (record.Constant, error) {
-	if lhs, ok := t.lhs.(*FieldNameExpression); ok && lhs.fieldName == fieldName {
-		if rhs, ok := t.rhs.(*ConstExpression); ok {
-			return rhs.value, nil
+func (t *Term) EquatesWithConstant(fieldName types.FieldName) (Constant, error) {
+	if lhs, ok := t.lhs.(FieldNameExpression); ok && lhs.fieldName == fieldName {
+		if rhs, ok := t.rhs.(Constant); ok {
+			return rhs, nil
 		}
 	}
 
-	if rhs, ok := t.rhs.(*FieldNameExpression); ok && rhs.fieldName == fieldName {
-		if lhs, ok := t.lhs.(*ConstExpression); ok {
-			return lhs.value, nil
+	if rhs, ok := t.rhs.(FieldNameExpression); ok && rhs.fieldName == fieldName {
+		if lhs, ok := t.lhs.(Constant); ok {
+			return lhs, nil
 		}
 	}
 

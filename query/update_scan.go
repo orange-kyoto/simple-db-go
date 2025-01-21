@@ -13,7 +13,7 @@ type UpdateScan interface {
 	// 存在しないフィールドを指定されたらエラーを返す.
 	SetString(fieldName types.FieldName, value string) error
 	// 存在しないフィールドを指定されたらエラーを返す.
-	SetValue(fieldName types.FieldName, value record.Constant) error
+	SetValue(fieldName types.FieldName, value Constant) error
 
 	Insert()
 	Delete()

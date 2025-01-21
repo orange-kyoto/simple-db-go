@@ -2,7 +2,7 @@ package metadata
 
 import (
 	"fmt"
-	"simple-db-go/record"
+	"simple-db-go/query"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
 )
@@ -10,7 +10,7 @@ import (
 // table_catalog テーブルのスキーマは固定であるため、TableScan.SetString,SetInt のエラーは起こり得ない.
 // 単に panic させる.
 func WriteTableCatalogRow(transaction *transaction.Transaction, tableManager *TableManager, row TableCatalogRow) {
-	tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
+	tableCatalogTableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
 	defer tableCatalogTableScan.Close()
 
 	tableCatalogTableScan.Insert()
@@ -29,7 +29,7 @@ func WriteTableCatalogRow(transaction *transaction.Transaction, tableManager *Ta
 // field_catalog テーブルのスキーマは固定であるため、TableScan.SetString,SetInt のエラーは起こり得ない.
 // 単に panic させる.
 func WriteFieldCatalogRows(transaction *transaction.Transaction, tableManager *TableManager, rows []FieldCatalogRow) {
-	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
+	fieldCatalogTableScan := query.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
 	defer fieldCatalogTableScan.Close()
 
 	for _, row := range rows {
@@ -72,7 +72,7 @@ func WriteViewCatalogRow(row ViewCatalogRow, transaction *transaction.Transactio
 		panic(fmt.Sprintf("view_catalog レコードの書き込みに失敗しました. err=%+v", err))
 	}
 
-	viewCatalogTableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
+	viewCatalogTableScan := query.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
 	defer viewCatalogTableScan.Close()
 
 	viewCatalogTableScan.Insert()

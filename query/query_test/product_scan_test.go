@@ -1,6 +1,7 @@
-package query
+package query_test
 
 import (
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -29,7 +30,7 @@ func TestProductScanScanInterfaceMethods(t *testing.T) {
 
 	// 2つのテーブルにデータを入れる。users には100件、orders には50件入れる。
 	layout1 := record.NewLayout(schema1)
-	tableScan1 := record.NewTableScan(transaction, testTableName1, layout1)
+	tableScan1 := query.NewTableScan(transaction, testTableName1, layout1)
 	for i := types.Int(0); i < 100; i++ {
 		tableScan1.Insert()
 		tableScan1.SetInt("id", i)
@@ -38,7 +39,7 @@ func TestProductScanScanInterfaceMethods(t *testing.T) {
 	tableScan1.Close()
 
 	layout2 := record.NewLayout(schema2)
-	tableScan2 := record.NewTableScan(transaction, testTableName2, layout2)
+	tableScan2 := query.NewTableScan(transaction, testTableName2, layout2)
 	for i := types.Int(0); i < 50; i++ {
 		tableScan2.Insert()
 		tableScan2.SetInt("order_id", i)
@@ -48,9 +49,9 @@ func TestProductScanScanInterfaceMethods(t *testing.T) {
 	tableScan2.Close()
 
 	t.Run("2つのテーブルの積をすべて取得することができること.", func(t *testing.T) {
-		tableScan1 := record.NewTableScan(transaction, testTableName1, layout1)
-		tableScan2 := record.NewTableScan(transaction, testTableName2, layout2)
-		productScan := NewProductScan(tableScan1, tableScan2)
+		tableScan1 := query.NewTableScan(transaction, testTableName1, layout1)
+		tableScan2 := query.NewTableScan(transaction, testTableName2, layout2)
+		productScan := query.NewProductScan(tableScan1, tableScan2)
 		defer productScan.Close()
 
 		scannedRecordsCount := 0
@@ -76,15 +77,15 @@ func TestProductScanScanInterfaceMethods(t *testing.T) {
 	})
 
 	t.Run("SelectScanと組み合わせて、JOINに相当する操作ができること.", func(t *testing.T) {
-		tableScan1 := record.NewTableScan(transaction, testTableName1, layout1)
-		tableScan2 := record.NewTableScan(transaction, testTableName2, layout2)
-		productScan := NewProductScan(tableScan1, tableScan2)
+		tableScan1 := query.NewTableScan(transaction, testTableName1, layout1)
+		tableScan2 := query.NewTableScan(transaction, testTableName2, layout2)
+		productScan := query.NewProductScan(tableScan1, tableScan2)
 		defer productScan.Close()
 
 		// `id = user_id` を想定し、ユーザーごとの注文情報を取得できることを期待する.
-		term := NewTerm(NewFieldNameExpression("id"), NewFieldNameExpression("user_id"))
-		predicate := NewPredicateWith(term)
-		seletScan := NewSelectScan(productScan, predicate)
+		term := query.NewTerm(query.NewFieldNameExpression("id"), query.NewFieldNameExpression("user_id"))
+		predicate := query.NewPredicateWith(term)
+		seletScan := query.NewSelectScan(productScan, predicate)
 
 		scannedRecordsCount := 0
 		for i := types.Int(0); seletScan.Next(); i++ {

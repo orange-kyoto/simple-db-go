@@ -2,14 +2,14 @@ package metadata
 
 import (
 	"fmt"
-	"simple-db-go/record"
+	"simple-db-go/query"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
 )
 
 // table_catalog テーブルの１行だけ読み取る.
 // table_catalog テーブルのスキーマは固定であるため、TableScan のメソッドではエラーは起こらない. 単に panic とする.
-func ReadTableCatalogRow(tableScan *record.TableScan) TableCatalogRow {
+func ReadTableCatalogRow(tableScan *query.TableScan) TableCatalogRow {
 	tableName, err := tableScan.GetString("table_name")
 	if err != nil {
 		panic(fmt.Sprintf("[ReadTableCatalogRow] table_catalog テーブルの table_name 列の読み取りに失敗しました. err=%+v", err))
@@ -29,7 +29,7 @@ func ReadTableCatalogRow(tableScan *record.TableScan) TableCatalogRow {
 // 指定した tableName の行だけ読み取る.
 // table_catalog テーブルのスキーマは固定であるため、TableScan のメソッドではエラーは起こらない. 単に panic とする.
 func ReadTableCatalogRowFor(tableName types.TableName, transaction *transaction.Transaction, tableManager *TableManager) (TableCatalogRow, error) {
-	tableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
+	tableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableManager.tableCatalogLayout)
 	defer tableScan.Close()
 
 	for tableScan.Next() {
@@ -54,7 +54,7 @@ func ReadTableCatalogRowFor(tableName types.TableName, transaction *transaction.
 	return TableCatalogRow{}, TableCatalogNotFoundError{TableName: tableName}
 }
 
-func ReadFieldCatalogRow(tableScan *record.TableScan) FieldCatalogRow {
+func ReadFieldCatalogRow(tableScan *query.TableScan) FieldCatalogRow {
 	tableName, err := tableScan.GetString("table_name")
 	if err != nil {
 		panic(fmt.Sprintf("[ReadFieldCatalogRow] field_catalog テーブルの table_name 列の読み取りに失敗しました. err=%+v", err))
@@ -92,7 +92,7 @@ func ReadFieldCatalogRow(tableScan *record.TableScan) FieldCatalogRow {
 // 指定したテーブルの field_catalog テーブルの行だけ読み取る.
 // field_catalog テーブルのスキーマは固定であるため、TableScan のメソッドではエラーは起こらない. 単に panic とする.
 func ReadFieldCatalogRowsFor(tableName types.TableName, transaction *transaction.Transaction, tableManager *TableManager) []FieldCatalogRow {
-	fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
+	fieldCatalogTableScan := query.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, tableManager.fieldCatalogLayout)
 	defer fieldCatalogTableScan.Close()
 
 	rows := []FieldCatalogRow{}
@@ -138,7 +138,7 @@ func ReadFieldCatalogRowsFor(tableName types.TableName, transaction *transaction
 
 // view_catalog テーブルの１行だけ読み取る.
 // view_catalog テーブルのスキーマは固定であるため、TableScan のメソッドではエラーは起こらない. 単に panic とする.
-func ReadViewCatalogRow(tableScan *record.TableScan) ViewCatalogRow {
+func ReadViewCatalogRow(tableScan *query.TableScan) ViewCatalogRow {
 	viewName, err := tableScan.GetString("view_name")
 	if err != nil {
 		panic(fmt.Sprintf("[ReadViewCatalogRow] view_catalog テーブルの view_name 列の読み取りに失敗しました. err=%+v", err))
@@ -155,7 +155,7 @@ func ReadViewCatalogRow(tableScan *record.TableScan) ViewCatalogRow {
 	}
 }
 
-func ReadIndexCatalogRow(tableScan *record.TableScan) IndexCatalogRow {
+func ReadIndexCatalogRow(tableScan *query.TableScan) IndexCatalogRow {
 	indexName, err := tableScan.GetString("index_name")
 	if err != nil {
 		panic(fmt.Sprintf("[ReadIndexCatalogRow] index_catalog テーブルの index_name 列の読み取りに失敗しました. err=%+v", err))

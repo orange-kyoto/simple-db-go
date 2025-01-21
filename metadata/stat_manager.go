@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -59,7 +60,7 @@ func (sm *StatManager) refreshStatistics(transaction *transaction.Transaction) {
 	sm.numCalls = 0
 
 	tableCatalogLayout := sm.tableManager.GetTableCatalogLayout()
-	tableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
+	tableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
 	defer tableScan.Close()
 
 	for tableScan.Next() {
@@ -77,7 +78,7 @@ func (sm *StatManager) refreshStatistics(transaction *transaction.Transaction) {
 }
 
 func (sm *StatManager) calcTableStats(tableName types.TableName, layout *record.Layout, transaction *transaction.Transaction) *StatInfo {
-	tableScan := record.NewTableScan(transaction, tableName, layout)
+	tableScan := query.NewTableScan(transaction, tableName, layout)
 	defer tableScan.Close()
 
 	numBlocks := types.Int(0)
