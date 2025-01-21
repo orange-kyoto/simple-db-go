@@ -1,7 +1,6 @@
 package query
 
 import (
-	"simple-db-go/record"
 	"simple-db-go/types"
 )
 
@@ -17,7 +16,7 @@ type Scan interface {
 	GetString(fieldName types.FieldName) (string, error)
 
 	// 存在しないフィールドを指定されたらエラーを返す.
-	GetValue(fieldName types.FieldName) (record.Constant, error)
+	GetValue(fieldName types.FieldName) (Constant, error)
 
 	HasField(fieldName types.FieldName) bool
 

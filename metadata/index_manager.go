@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"simple-db-go/constants"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -37,7 +38,7 @@ func NewIndexManager(isNew bool, tableManager *TableManager, statManager *StatMa
 }
 
 func (im *IndexManager) CreateIndex(indexName types.IndexName, tableName types.TableName, fieldName types.FieldName, transaction *transaction.Transaction) {
-	tableScan := record.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, im.layout)
+	tableScan := query.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, im.layout)
 	defer tableScan.Close()
 
 	tableScan.Insert()
@@ -54,7 +55,7 @@ func (im *IndexManager) GetIndexInfo(tableName types.TableName, transaction *tra
 
 	result := make(map[types.FieldName]*IndexInfo)
 
-	tableScan := record.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, im.layout)
+	tableScan := query.NewTableScan(transaction, INDEX_CATALOG_TABLE_NAME, im.layout)
 	defer tableScan.Close()
 
 	for tableScan.Next() {

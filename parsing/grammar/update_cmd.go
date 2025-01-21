@@ -2,7 +2,7 @@ package grammar
 
 import (
 	"simple-db-go/parsing/data"
-	"simple-db-go/record"
+	"simple-db-go/query"
 	"simple-db-go/types"
 
 	"github.com/alecthomas/participle/v2"
@@ -30,9 +30,9 @@ type InsertCmd struct {
 func (*InsertCmd) GrammarUpdateCmd() {}
 func (*InsertCmd) GrammarStatement() {}
 func (i *InsertCmd) ToData() data.SQLData {
-	values := make([]record.Constant, 0, len(i.Constants))
+	values := make([]query.Constant, 0, len(i.Constants))
 	for _, c := range i.Constants {
-		values = append(values, c.ToRecordConstant())
+		values = append(values, c.ToQueryConstant())
 	}
 
 	return &data.InsertData{

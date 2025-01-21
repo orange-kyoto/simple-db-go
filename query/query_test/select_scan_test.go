@@ -1,6 +1,7 @@
-package query
+package query_test
 
 import (
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -24,7 +25,7 @@ func TestSelectScanScanInterfaceMethods(t *testing.T) {
 
 	// このテスト用のテーブルにいくらかデータを入れる。100件くらい入れてみるか。
 	layout := record.NewLayout(schema)
-	tableScan := record.NewTableScan(transaction, testTableName, layout)
+	tableScan := query.NewTableScan(transaction, testTableName, layout)
 	for i := types.Int(0); i < 100; i++ {
 		tableScan.Insert()
 		tableScan.SetInt("id", i)
@@ -36,11 +37,11 @@ func TestSelectScanScanInterfaceMethods(t *testing.T) {
 
 	t.Run("常に TRUE となる Predicate の場合、すべてのレコードを取得できる.", func(t *testing.T) {
 		// `country = 'Japan'` を想定.
-		testTerm := NewTerm(NewFieldNameExpression("country"), NewConstExpression(record.NewStrConstant("Japan")))
-		testPredicate := NewPredicateWith(testTerm)
+		testTerm := query.NewTerm(query.NewFieldNameExpression("country"), query.NewStrConstant("Japan"))
+		testPredicate := query.NewPredicateWith(testTerm)
 
-		tableScan := record.NewTableScan(transaction, testTableName, layout)
-		selectScan := NewSelectScan(tableScan, testPredicate)
+		tableScan := query.NewTableScan(transaction, testTableName, layout)
+		selectScan := query.NewSelectScan(tableScan, testPredicate)
 		defer selectScan.Close()
 
 		scannedRecordsCount := 0
@@ -65,11 +66,11 @@ func TestSelectScanScanInterfaceMethods(t *testing.T) {
 
 	t.Run("条件にマッチするレコードだけを取得することができること.", func(t *testing.T) {
 		// `age = 2` を想定. 0~99のうち、３で割った時のあまりが2のレコードだけ取得したい.
-		testTerm := NewTerm(NewFieldNameExpression("age"), NewConstExpression(record.NewIntConstant(2)))
-		testPredicate := NewPredicateWith(testTerm)
+		testTerm := query.NewTerm(query.NewFieldNameExpression("age"), query.NewIntConstant(2))
+		testPredicate := query.NewPredicateWith(testTerm)
 
-		tableScan := record.NewTableScan(transaction, testTableName, layout)
-		selectScan := NewSelectScan(tableScan, testPredicate)
+		tableScan := query.NewTableScan(transaction, testTableName, layout)
+		selectScan := query.NewSelectScan(tableScan, testPredicate)
 		defer selectScan.Close()
 
 		scannedRecordsCount := 0
@@ -94,11 +95,11 @@ func TestSelectScanScanInterfaceMethods(t *testing.T) {
 
 	t.Run("条件にマッチするレコードが１件もない場合、Next() が直ちに false を返すこと.", func(t *testing.T) {
 		// `age = 999`を想定。これを満たすレコードはない。
-		testTerm := NewTerm(NewFieldNameExpression("age"), NewConstExpression(record.NewIntConstant(999)))
-		testPredicate := NewPredicateWith(testTerm)
+		testTerm := query.NewTerm(query.NewFieldNameExpression("age"), query.NewIntConstant(999))
+		testPredicate := query.NewPredicateWith(testTerm)
 
-		tableScan := record.NewTableScan(transaction, testTableName, layout)
-		selectScan := NewSelectScan(tableScan, testPredicate)
+		tableScan := query.NewTableScan(transaction, testTableName, layout)
+		selectScan := query.NewSelectScan(tableScan, testPredicate)
 		defer selectScan.Close()
 
 		assert.False(t, selectScan.Next(), "条件にマッチするレコードが１件もない場合、Next() が直ちに false を返すべし.")
@@ -107,11 +108,11 @@ func TestSelectScanScanInterfaceMethods(t *testing.T) {
 	// TODO: これはきちんとハンドリングしたい。ただ、Next() の変更はちょっと面倒なので後回し。
 	t.Run("Predicate にて存在しない列名を含む条件を定義するとpanicする（仕様について要検討）", func(t *testing.T) {
 		// `hoge = 999` を想定。hoge という列名は存在しない。
-		testTerm := NewTerm(NewFieldNameExpression("hoge"), NewConstExpression(record.NewIntConstant(999)))
-		testPredicate := NewPredicateWith(testTerm)
+		testTerm := query.NewTerm(query.NewFieldNameExpression("hoge"), query.NewIntConstant(999))
+		testPredicate := query.NewPredicateWith(testTerm)
 
-		tableScan := record.NewTableScan(transaction, testTableName, layout)
-		selectScan := NewSelectScan(tableScan, testPredicate)
+		tableScan := query.NewTableScan(transaction, testTableName, layout)
+		selectScan := query.NewSelectScan(tableScan, testPredicate)
 		defer selectScan.Close()
 
 		assert.Panics(t, func() { selectScan.Next() }, "存在しない列名を含む条件を定義するとpanicするべし.エラーハンドリングの改善を検討する.")

@@ -48,7 +48,7 @@ func (s *SelectScan) GetString(fieldName types.FieldName) (string, error) {
 	return s.scan.GetString(fieldName)
 }
 
-func (s *SelectScan) GetValue(fieldName types.FieldName) (record.Constant, error) {
+func (s *SelectScan) GetValue(fieldName types.FieldName) (Constant, error) {
 	return s.scan.GetValue(fieldName)
 }
 
@@ -82,7 +82,7 @@ func (s *SelectScan) SetString(fieldName types.FieldName, value string) error {
 	}
 }
 
-func (s *SelectScan) SetValue(fieldName types.FieldName, value record.Constant) error {
+func (s *SelectScan) SetValue(fieldName types.FieldName, value Constant) error {
 	// SimpleDB の update planner は table scan, select scan しか関係しないので、特にエラーをハンドリングしない。
 	if s, ok := s.scan.(UpdateScan); ok {
 		return s.SetValue(fieldName, value)

@@ -1,4 +1,4 @@
-package query
+package query_test
 
 import (
 	"os"
@@ -11,18 +11,21 @@ import (
 )
 
 const (
+	tableScanTestName   = "test_table_scan"
 	selectScanTestName  = "test_select_scan"
 	projectScanTestName = "test_project_scan"
 	productScanTestName = "test_product_scan"
 )
 
 func TestMain(m *testing.M) {
+	util.Cleanup(tableScanTestName)
 	util.Cleanup(selectScanTestName)
 	util.Cleanup(projectScanTestName)
 	util.Cleanup(productScanTestName)
 
 	code := m.Run()
 
+	util.Cleanup(tableScanTestName)
 	util.Cleanup(selectScanTestName)
 	util.Cleanup(projectScanTestName)
 	util.Cleanup(productScanTestName)

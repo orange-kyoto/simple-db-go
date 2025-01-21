@@ -42,6 +42,6 @@ func calcFieldOffsetInPage(slotOffset SlotOffset, fieldOffset types.FieldOffsetI
 	return FieldOffsetInPage(types.Int(slotOffset) + types.Int(fieldOffset))
 }
 
-func slotExists(slotNumber SlotNumber) bool {
+func SlotExists(slotNumber SlotNumber) bool {
 	return slotNumber > NULL_SLOT_NUMBER
 }

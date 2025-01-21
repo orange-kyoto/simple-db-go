@@ -3,7 +3,7 @@ package metadata
 import (
 	"path"
 	"simple-db-go/constants"
-	"simple-db-go/record"
+	"simple-db-go/query"
 	"simple-db-go/types"
 	"testing"
 
@@ -31,9 +31,9 @@ func TestViewManagerNewViewManager(t *testing.T) {
 		tableCatalogLayout, _ := tableManager.GetLayout(TABLE_CATALOG_TABLE_NAME, transaction)
 		fieldCatalogLayout, _ := tableManager.GetLayout(FIELD_CATALOG_TABLE_NAME, transaction)
 		viewCatalogLayout, _ := tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
-		tableCatalogTableScan := record.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
-		fieldCatalogTableScan := record.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, fieldCatalogLayout)
-		viewCatalogTableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
+		tableCatalogTableScan := query.NewTableScan(transaction, TABLE_CATALOG_TABLE_NAME, tableCatalogLayout)
+		fieldCatalogTableScan := query.NewTableScan(transaction, FIELD_CATALOG_TABLE_NAME, fieldCatalogLayout)
+		viewCatalogTableScan := query.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
 
 		t.Run("テーブルカタログにビューカタログのレコードが登録されている.", func(t *testing.T) {
 			expectedRecords := []TableCatalogRow{
@@ -78,7 +78,7 @@ func TestViewManagerGetCreateView(t *testing.T) {
 			assert.NotPanics(t, func() { viewManager.CreateView(testViewName, testViewDef, transaction) }, "ビューの作成に失敗してはいけない.")
 
 			viewCatalogLayout, _ := tableManager.GetLayout(VIEW_CATALOG_TABLE_NAME, transaction)
-			viewCatalogTableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
+			viewCatalogTableScan := query.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, viewCatalogLayout)
 
 			assert.True(t, viewCatalogTableScan.Next(), "ビューカタログにレコードが登録されているはず.")
 

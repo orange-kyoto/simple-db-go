@@ -3,6 +3,7 @@ package metadata
 import (
 	"fmt"
 	"simple-db-go/constants"
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -43,7 +44,7 @@ func (vm *ViewManager) GetViewDef(viewName types.ViewName, transaction *transact
 		panic(fmt.Sprintf("ビューの取得に失敗しました. err=%+v", err))
 	}
 
-	tableScan := record.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
+	tableScan := query.NewTableScan(transaction, VIEW_CATALOG_TABLE_NAME, layout)
 	defer tableScan.Close()
 
 	for tableScan.Next() {

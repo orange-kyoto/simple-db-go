@@ -113,7 +113,7 @@ func (rp *RecordPage) FindUsedSlotAfter(slotNumber SlotNumber) SlotNumber {
 // そのようなスロットが存在しない場合は、-1を返す.
 func (rp *RecordPage) FindEmptySlotAfter(slotNumber SlotNumber) SlotNumber {
 	newSlot := rp.searchAfter(slotNumber, SLOT_EMPTY)
-	if slotExists(newSlot) {
+	if SlotExists(newSlot) {
 		rp.setSlotFlag(newSlot, SLOT_INUSE)
 	}
 	return newSlot

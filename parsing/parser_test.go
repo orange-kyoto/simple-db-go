@@ -41,7 +41,7 @@ func TestParserParseQuery(t *testing.T) {
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("name"),
-						query.NewConstExpression(record.NewStrConstant("hoge")),
+						query.NewStrConstant("hoge"),
 					),
 				),
 			},
@@ -54,7 +54,7 @@ func TestParserParseQuery(t *testing.T) {
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("id"),
-						query.NewConstExpression(record.NewIntConstant(1)),
+						query.NewIntConstant(1),
 					),
 				),
 			},
@@ -68,11 +68,11 @@ func TestParserParseQuery(t *testing.T) {
 					[]*query.Term{
 						query.NewTerm(
 							query.NewFieldNameExpression("id"),
-							query.NewConstExpression(record.NewIntConstant(1)),
+							query.NewIntConstant(1),
 						),
 						query.NewTerm(
 							query.NewFieldNameExpression("name"),
-							query.NewConstExpression(record.NewStrConstant("hoge")),
+							query.NewStrConstant("hoge"),
 						),
 					},
 				),
@@ -101,9 +101,7 @@ func TestParserParseInsert(t *testing.T) {
 			&data.InsertData{
 				TableName:  "users",
 				FieldNames: []types.FieldName{"id"},
-				Values: []record.Constant{
-					record.NewIntConstant(1),
-				},
+				Values:     []query.Constant{query.NewIntConstant(1)},
 			},
 		},
 		{
@@ -111,10 +109,10 @@ func TestParserParseInsert(t *testing.T) {
 			&data.InsertData{
 				TableName:  "users",
 				FieldNames: []types.FieldName{"id", "name", "age"},
-				Values: []record.Constant{
-					record.NewIntConstant(1),
-					record.NewStrConstant("hoge"),
-					record.NewIntConstant(20),
+				Values: []query.Constant{
+					query.NewIntConstant(1),
+					query.NewStrConstant("hoge"),
+					query.NewIntConstant(20),
 				},
 			},
 		},
@@ -150,7 +148,7 @@ func TestParserParseDelete(t *testing.T) {
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("id"),
-						query.NewConstExpression(record.NewIntConstant(1)),
+						query.NewIntConstant(1),
 					),
 				),
 			},
@@ -163,11 +161,11 @@ func TestParserParseDelete(t *testing.T) {
 					[]*query.Term{
 						query.NewTerm(
 							query.NewFieldNameExpression("id"),
-							query.NewConstExpression(record.NewIntConstant(1)),
+							query.NewIntConstant(1),
 						),
 						query.NewTerm(
 							query.NewFieldNameExpression("name"),
-							query.NewConstExpression(record.NewStrConstant("fuga")),
+							query.NewStrConstant("fuga"),
 						),
 					},
 				),
@@ -196,7 +194,7 @@ func TestParserParseModify(t *testing.T) {
 			&data.ModifyData{
 				TableName: "users",
 				FieldName: "name",
-				NewValue:  query.NewConstExpression(record.NewStrConstant("hoge")),
+				NewValue:  query.NewStrConstant("hoge"),
 				Predicate: nil,
 			},
 		},
@@ -205,11 +203,11 @@ func TestParserParseModify(t *testing.T) {
 			&data.ModifyData{
 				TableName: "orders",
 				FieldName: "quantity",
-				NewValue:  query.NewConstExpression(record.NewIntConstant(10)),
+				NewValue:  query.NewIntConstant(10),
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("id"),
-						query.NewConstExpression(record.NewIntConstant(1)),
+						query.NewIntConstant(1),
 					),
 				),
 			},
@@ -219,16 +217,16 @@ func TestParserParseModify(t *testing.T) {
 			&data.ModifyData{
 				TableName: "menus",
 				FieldName: "tag",
-				NewValue:  query.NewConstExpression(record.NewStrConstant("piyo")),
+				NewValue:  query.NewStrConstant("piyo"),
 				Predicate: query.NewPredicateFrom(
 					[]*query.Term{
 						query.NewTerm(
 							query.NewFieldNameExpression("id"),
-							query.NewConstExpression(record.NewIntConstant(1)),
+							query.NewIntConstant(1),
 						),
 						query.NewTerm(
 							query.NewFieldNameExpression("name"),
-							query.NewConstExpression(record.NewStrConstant("fuga")),
+							query.NewStrConstant("fuga"),
 						),
 					},
 				),

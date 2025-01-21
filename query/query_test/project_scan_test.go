@@ -1,6 +1,7 @@
-package query
+package query_test
 
 import (
+	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
 	"testing"
@@ -23,7 +24,7 @@ func TestProjectScanScanInterfaceMethods(t *testing.T) {
 
 	// このテスト用のテーブルにいくらかデータを入れる。100件くらい入れてみるか。
 	layout := record.NewLayout(schema)
-	tableScan := record.NewTableScan(transaction, testTableName, layout)
+	tableScan := query.NewTableScan(transaction, testTableName, layout)
 	for i := types.Int(0); i < 100; i++ {
 		tableScan.Insert()
 		tableScan.SetInt("id", i)
@@ -33,8 +34,8 @@ func TestProjectScanScanInterfaceMethods(t *testing.T) {
 	tableScan.Close()
 
 	t.Run("ProjectScan で指定したフィールドだけ取得できること.", func(t *testing.T) {
-		tableScan := record.NewTableScan(transaction, testTableName, layout)
-		projectScan := NewProjectScan(tableScan, []types.FieldName{"id", "name"})
+		tableScan := query.NewTableScan(transaction, testTableName, layout)
+		projectScan := query.NewProjectScan(tableScan, []types.FieldName{"id", "name"})
 		defer projectScan.Close()
 
 		scannedRecordsCount := 0
@@ -50,7 +51,7 @@ func TestProjectScanScanInterfaceMethods(t *testing.T) {
 
 			if assert.Error(t, ageError, "`age`フィールドは ProjectScan で指定していないのでエラーを返すべし.") {
 				assert.Equal(t, types.Int(0), ageValue, "`age`フィールドは ProjectScan で指定していないので、デフォルト値が返るべし.")
-				assert.IsType(t, &UnknownFieldInProjectScanError{}, ageError, "`age`フィールドは ProjectScan で指定していないので、UnknownFieldInProjectScanError を返すべし.")
+				assert.IsType(t, &query.UnknownFieldInProjectScanError{}, ageError, "`age`フィールドは ProjectScan で指定していないので、UnknownFieldInProjectScanError を返すべし.")
 			}
 
 			scannedRecordsCount++

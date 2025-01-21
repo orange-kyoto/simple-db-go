@@ -1,7 +1,6 @@
 package query
 
 import (
-	"simple-db-go/record"
 	"simple-db-go/types"
 )
 
@@ -46,7 +45,7 @@ func (ps *ProductScan) GetString(fieldName types.FieldName) (string, error) {
 	}
 }
 
-func (ps *ProductScan) GetValue(fieldName types.FieldName) (record.Constant, error) {
+func (ps *ProductScan) GetValue(fieldName types.FieldName) (Constant, error) {
 	if ps.scan1.HasField(fieldName) {
 		return ps.scan1.GetValue(fieldName)
 	} else {

@@ -1,29 +1,29 @@
-package record
+package query
 
 import (
 	"simple-db-go/constants"
 	"simple-db-go/file"
+	"simple-db-go/record"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
 )
 
 // 単一のテーブルに対してのレコードアクセスを管理する.
 // ブロックの存在を意識せず、論理的なレコード操作が可能になる.
-// TODO: UpdateScan なる Interface を実装すべきだが、詳細は Chapter8 で.
 type TableScan struct {
 	transaction       *transaction.Transaction
-	layout            *Layout
-	recordPage        *RecordPage
+	layout            *record.Layout
+	recordPage        *record.RecordPage
 	fileName          string
-	currentSlotNumber SlotNumber
+	currentSlotNumber record.SlotNumber
 }
 
-func NewTableScan(transaction *transaction.Transaction, tableName types.TableName, layout *Layout) *TableScan {
+func NewTableScan(transaction *transaction.Transaction, tableName types.TableName, layout *record.Layout) *TableScan {
 	tableScan := &TableScan{
 		transaction:       transaction,
 		layout:            layout,
 		fileName:          string(tableName) + ".table",
-		currentSlotNumber: NULL_SLOT_NUMBER,
+		currentSlotNumber: record.NULL_SLOT_NUMBER,
 	}
 
 	if transaction.Size(tableScan.fileName) == 0 {
@@ -58,7 +58,7 @@ func (ts *TableScan) Next() bool {
 	ts.currentSlotNumber = ts.recordPage.FindUsedSlotAfter(ts.currentSlotNumber)
 
 	// 次のレコードがない場合は、、、
-	for !slotExists(ts.currentSlotNumber) {
+	for !record.SlotExists(ts.currentSlotNumber) {
 		// 最後のブロックであれば、もう次のレコードはないので終了.
 		if ts.isLastBlock() {
 			return false
@@ -72,7 +72,7 @@ func (ts *TableScan) Next() bool {
 }
 
 // current record を指定された RecordID に移動する.
-func (ts *TableScan) MoveToRecordID(recordID RecordID) {
+func (ts *TableScan) MoveToRecordID(recordID record.RecordID) {
 	ts.moveToBlock(recordID.GetBlockNumber())
 	ts.currentSlotNumber = recordID.GetSlotNumber()
 }
@@ -85,7 +85,7 @@ func (ts *TableScan) Insert() {
 	ts.currentSlotNumber = ts.recordPage.FindEmptySlotAfter(ts.currentSlotNumber)
 
 	// 現在のレコードページに空きスロットがない場合、新しいブロックをなんとか用意する.
-	for !slotExists(ts.currentSlotNumber) {
+	for !record.SlotExists(ts.currentSlotNumber) {
 		if ts.isLastBlock() {
 			ts.moveToNewBlock()
 		} else {
@@ -140,14 +140,14 @@ func (ts *TableScan) SetString(fieldName types.FieldName, val string) error {
 // func (ts *TableScan) SetValue(fieldName, value Constant)
 
 // 現在の RecordID を返す.
-func (ts *TableScan) GetCurrentRecordID() RecordID {
+func (ts *TableScan) GetCurrentRecordID() record.RecordID {
 	blockNumber := ts.recordPage.GetBlockID().BlockNumber
-	return NewRecordID(blockNumber, ts.currentSlotNumber)
+	return record.NewRecordID(blockNumber, ts.currentSlotNumber)
 }
 
 // current record の現在のスロットを削除する（EMPTYにする）.
 func (ts *TableScan) Delete() {
-	if ts.currentSlotNumber != NULL_SLOT_NUMBER {
+	if ts.currentSlotNumber != record.NULL_SLOT_NUMBER {
 		ts.recordPage.Delete(ts.currentSlotNumber)
 	}
 }
@@ -163,8 +163,8 @@ func (ts *TableScan) moveToBlock(blockNumber types.BlockNumber) {
 	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
 	ts.transaction.Pin(blockID)
 
-	ts.recordPage = NewRecordPage(ts.transaction, blockID, ts.layout)
-	ts.currentSlotNumber = NULL_SLOT_NUMBER
+	ts.recordPage = record.NewRecordPage(ts.transaction, blockID, ts.layout)
+	ts.currentSlotNumber = record.NULL_SLOT_NUMBER
 }
 
 func (ts *TableScan) moveToNextBlock() {
@@ -182,10 +182,10 @@ func (ts *TableScan) moveToNewBlock() {
 	// あるいは、RecordPage.SetInt などのメソッド内で実施するのが良いかもしれない.
 	ts.transaction.Pin(blockID)
 
-	ts.recordPage = NewRecordPage(ts.transaction, blockID, ts.layout)
+	ts.recordPage = record.NewRecordPage(ts.transaction, blockID, ts.layout)
 	// 新しく追加されたまっさらなブロックに追加していきたいので、初期化する.
 	ts.recordPage.Format()
-	ts.currentSlotNumber = NULL_SLOT_NUMBER
+	ts.currentSlotNumber = record.NULL_SLOT_NUMBER
 }
 
 func (ts *TableScan) isLastBlock() bool {
