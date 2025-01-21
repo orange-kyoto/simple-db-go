@@ -6,7 +6,6 @@ import (
 	"simple-db-go/types"
 )
 
-// こうやって interface の実装を確認できるのか. 勉強として書いておく.
 var _ query.Plan = (*SelectPlan)(nil)
 
 type SelectPlan struct {
