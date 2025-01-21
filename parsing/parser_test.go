@@ -324,3 +324,29 @@ func TestParserParseCreateView(t *testing.T) {
 		}
 	}
 }
+
+func TestParserParseCreateIndex(t *testing.T) {
+	parser := NewParser()
+
+	tests := []struct {
+		sql      string
+		expected *data.CreateIndexData
+	}{
+		{
+			`CREATE INDEX idx1 ON users (id);`,
+			&data.CreateIndexData{
+				IndexName: "idx1",
+				TableName: "users",
+				FieldName: "id",
+			},
+		},
+	}
+
+	for i, test := range tests {
+		result, err := parser.Parse(test.sql)
+		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
+			assert.IsTypef(t, &data.CreateIndexData{}, result, "[i=%d] result が *CreateIndexData であること.", i)
+			assert.Equalf(t, test.expected, result, "[i=%d] CreateIndexData が期待通りであること.", i)
+		}
+	}
+}

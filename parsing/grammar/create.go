@@ -60,10 +60,16 @@ type CreateIndexCmd struct {
 	FieldName types.FieldName `"(" @Ident ")" ";"?`
 }
 
-func (*CreateIndexCmd) GrammarUpdateCmd()    {}
-func (*CreateIndexCmd) GrammarCreateCmd()    {}
-func (*CreateIndexCmd) GrammarStatement()    {}
-func (*CreateIndexCmd) ToData() data.SQLData { return nil }
+func (*CreateIndexCmd) GrammarUpdateCmd() {}
+func (*CreateIndexCmd) GrammarCreateCmd() {}
+func (*CreateIndexCmd) GrammarStatement() {}
+func (c *CreateIndexCmd) ToData() data.SQLData {
+	return &data.CreateIndexData{
+		IndexName: c.IndexName,
+		TableName: c.TableName,
+		FieldName: c.FieldName,
+	}
+}
 
 type FieldDef interface {
 	GrammarFieldDef()
