@@ -213,7 +213,7 @@ func TestParserParseModify(t *testing.T) {
 			},
 		},
 		{
-			`update menus set tag = 'piyo' WHERE id = 1 and name = 'fuga'`,
+			`update menus set tag = 'piyo' where id = 1 and name = 'fuga'`,
 			&data.ModifyData{
 				TableName: "menus",
 				FieldName: "tag",
@@ -269,6 +269,15 @@ func TestParserParseCreateTable(t *testing.T) {
 				return &data.CreateTableData{TableName: "orders", Schema: schema}
 			}(),
 		},
+		{
+			`create table users (id int, name varchar(255));`,
+			func() *data.CreateTableData {
+				schema := record.NewSchema()
+				schema.AddIntField("id")
+				schema.AddStringField("name", 255)
+				return &data.CreateTableData{TableName: "users", Schema: schema}
+			}(),
+		},
 	}
 
 	for i, test := range tests {
@@ -314,6 +323,17 @@ func TestParserParseCreateView(t *testing.T) {
 				},
 			},
 		},
+		{
+			`create view view1 as select id, name from users;`,
+			&data.CreateViewData{
+				ViewName: "view1",
+				QueryData: &data.QueryData{
+					FieldNames: []types.FieldName{"id", "name"},
+					TableNames: []types.TableName{"users"},
+					Predicate:  nil,
+				},
+			},
+		},
 	}
 
 	for i, test := range tests {
@@ -334,6 +354,14 @@ func TestParserParseCreateIndex(t *testing.T) {
 	}{
 		{
 			`CREATE INDEX idx1 ON users (id);`,
+			&data.CreateIndexData{
+				IndexName: "idx1",
+				TableName: "users",
+				FieldName: "id",
+			},
+		},
+		{
+			`create index idx1 on users (id);`,
 			&data.CreateIndexData{
 				IndexName: "idx1",
 				TableName: "users",

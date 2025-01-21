@@ -14,7 +14,7 @@ type Parser struct {
 
 func NewParser() *Parser {
 	initLexer := lexer.MustSimple([]lexer.SimpleRule{
-		{Name: `Keyword`, Pattern: `(?i)\b(SELECT|FROM|WHERE|AND|AS|CREATE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|VIEW|TABLE|INT|VARCHAR)\b`},
+		{Name: `Keyword`, Pattern: `(?i)\b(SELECT|FROM|WHERE|AND|AS|CREATE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|INDEX|ON|VIEW|TABLE|INT|VARCHAR)\b`},
 		{Name: `Ident`, Pattern: `[a-zA-Z][a-zA-Z_\d]*`},
 		{Name: `String`, Pattern: `'[^']*'|"[^"]*"`},
 		{Name: `Int`, Pattern: `-?[1-9][0-9]*`},
