@@ -44,10 +44,15 @@ type CreateViewCmd struct {
 	ViewDefQuery *Query         `"AS" @@`
 }
 
-func (*CreateViewCmd) GrammarUpdateCmd()    {}
-func (*CreateViewCmd) GrammarCreateCmd()    {}
-func (*CreateViewCmd) GrammarStatement()    {}
-func (*CreateViewCmd) ToData() data.SQLData { return nil }
+func (*CreateViewCmd) GrammarUpdateCmd() {}
+func (*CreateViewCmd) GrammarCreateCmd() {}
+func (*CreateViewCmd) GrammarStatement() {}
+func (c *CreateViewCmd) ToData() data.SQLData {
+	return &data.CreateViewData{
+		ViewName:  c.ViewName,
+		QueryData: c.ViewDefQuery.ToData().(*data.QueryData),
+	}
+}
 
 type CreateIndexCmd struct {
 	IndexName types.IndexName `"CREATE" "INDEX" @Ident`

@@ -279,3 +279,48 @@ func TestParserParseCreateTable(t *testing.T) {
 		}
 	}
 }
+
+func TestParserParseCreateView(t *testing.T) {
+	parser := NewParser()
+
+	tests := []struct {
+		sql      string
+		expected *data.CreateViewData
+	}{
+		{
+			`CREATE VIEW view1 AS SELECT id, name FROM users;`,
+			&data.CreateViewData{
+				ViewName: "view1",
+				QueryData: &data.QueryData{
+					FieldNames: []types.FieldName{"id", "name"},
+					TableNames: []types.TableName{"users"},
+					Predicate:  nil,
+				},
+			},
+		},
+		{
+			`CREATE VIEW view2 AS SELECT id, name, age FROM users WHERE age = 20;`,
+			&data.CreateViewData{
+				ViewName: "view2",
+				QueryData: &data.QueryData{
+					FieldNames: []types.FieldName{"id", "name", "age"},
+					TableNames: []types.TableName{"users"},
+					Predicate: query.NewPredicateWith(
+						query.NewTerm(
+							query.NewFieldNameExpression("age"),
+							query.NewIntConstant(20),
+						),
+					),
+				},
+			},
+		},
+	}
+
+	for i, test := range tests {
+		result, err := parser.Parse(test.sql)
+		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
+			assert.IsTypef(t, &data.CreateViewData{}, result, "[i=%d] result が *CreateViewData であること.", i)
+			assert.Equalf(t, test.expected, result, "[i=%d] CreateViewData が期待通りであること.", i)
+		}
+	}
+}

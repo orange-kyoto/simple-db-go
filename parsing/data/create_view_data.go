@@ -3,7 +3,7 @@ package data
 import "simple-db-go/types"
 
 type CreateViewData struct {
-	TableName types.TableName
+	ViewName  types.ViewName
 	QueryData *QueryData
 }
 
