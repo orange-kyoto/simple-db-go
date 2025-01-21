@@ -26,8 +26,16 @@ func (q *QueryData) ToString() string {
 		tableNames = append(tableNames, string(tableName))
 	}
 
+	if q.Predicate == nil {
+		return fmt.Sprintf(
+			"SELECT %s FROM %s;",
+			strings.Join(fieldNames, ", "),
+			strings.Join(tableNames, ", "),
+		)
+	}
+
 	return fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s",
+		"SELECT %s FROM %s WHERE %s;",
 		strings.Join(fieldNames, ", "),
 		strings.Join(tableNames, ", "),
 		q.Predicate.ToString(),

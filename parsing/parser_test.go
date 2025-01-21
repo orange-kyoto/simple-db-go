@@ -14,8 +14,9 @@ func TestParserParseQuery(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
-		expected *data.QueryData
+		inputSql     string
+		expectedData *data.QueryData
+		expectedSql  string
 	}{
 		{
 			`SELECT id FROM users`,
@@ -24,6 +25,7 @@ func TestParserParseQuery(t *testing.T) {
 				TableNames: []types.TableName{"users"},
 				Predicate:  nil,
 			},
+			`SELECT id FROM users;`,
 		},
 		{
 			`select id, name, age from users, orders;`,
@@ -32,6 +34,7 @@ func TestParserParseQuery(t *testing.T) {
 				TableNames: []types.TableName{"users", "orders"},
 				Predicate:  nil,
 			},
+			`SELECT id, name, age FROM users, orders;`,
 		},
 		{
 			`SELECT id, name, age FROM users WHERE name = 'hoge'`,
@@ -45,6 +48,7 @@ func TestParserParseQuery(t *testing.T) {
 					),
 				),
 			},
+			`SELECT id, name, age FROM users WHERE name = 'hoge';`,
 		},
 		{
 			`SELECT id, name, age FROM users WHERE id = 1;`,
@@ -58,6 +62,7 @@ func TestParserParseQuery(t *testing.T) {
 					),
 				),
 			},
+			`SELECT id, name, age FROM users WHERE id = 1;`,
 		},
 		{
 			`SELECT id, name, age FROM users WHERE id = 1 AND name = 'hoge'`,
@@ -77,14 +82,16 @@ func TestParserParseQuery(t *testing.T) {
 					},
 				),
 			},
+			`SELECT id, name, age FROM users WHERE id = 1 AND name = 'hoge';`,
 		},
 	}
 
 	for i, test := range tests {
-		result, err := parser.Parse(test.sql)
+		result, err := parser.Parse(test.inputSql)
 		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.") {
 			assert.IsTypef(t, &data.QueryData{}, result, "[i=%d] result が *Query であること.", i)
-			assert.Equalf(t, test.expected, result, "[i=%d] QueryData が期待通りであること.", i)
+			assert.Equalf(t, test.expectedData, result, "[i=%d] QueryData が期待通りであること.", i)
+			assert.Equal(t, test.expectedSql, result.(*data.QueryData).ToString(), "[i=%d] ToString() で元の SQL 文が復元できること.", i)
 		}
 	}
 }
@@ -293,8 +300,9 @@ func TestParserParseCreateView(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
-		expected *data.CreateViewData
+		inputSql        string
+		expectedData    *data.CreateViewData
+		expectedViewDef types.ViewDef
 	}{
 		{
 			`CREATE VIEW view1 AS SELECT id, name FROM users;`,
@@ -306,6 +314,7 @@ func TestParserParseCreateView(t *testing.T) {
 					Predicate:  nil,
 				},
 			},
+			`SELECT id, name FROM users;`,
 		},
 		{
 			`CREATE VIEW view2 AS SELECT id, name, age FROM users WHERE age = 20;`,
@@ -322,6 +331,7 @@ func TestParserParseCreateView(t *testing.T) {
 					),
 				},
 			},
+			`SELECT id, name, age FROM users WHERE age = 20;`,
 		},
 		{
 			`create view view1 as select id, name from users;`,
@@ -333,14 +343,16 @@ func TestParserParseCreateView(t *testing.T) {
 					Predicate:  nil,
 				},
 			},
+			`SELECT id, name FROM users;`,
 		},
 	}
 
 	for i, test := range tests {
-		result, err := parser.Parse(test.sql)
+		result, err := parser.Parse(test.inputSql)
 		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
 			assert.IsTypef(t, &data.CreateViewData{}, result, "[i=%d] result が *CreateViewData であること.", i)
-			assert.Equalf(t, test.expected, result, "[i=%d] CreateViewData が期待通りであること.", i)
+			assert.Equalf(t, test.expectedData, result, "[i=%d] CreateViewData が期待通りであること.", i)
+			assert.Equalf(t, test.expectedViewDef, result.(*data.CreateViewData).GetViewDef(), "[i=%d] GetViewDef でビュー定義だけを取得できること.", i)
 		}
 	}
 }

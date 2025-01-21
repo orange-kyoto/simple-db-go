@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"simple-db-go/record"
 	"simple-db-go/types"
 )
@@ -31,7 +32,7 @@ type StrConstant struct {
 
 // For Constant interface
 func (sc StrConstant) Constant()        {}
-func (sc StrConstant) ToString() string { return sc.value }
+func (sc StrConstant) ToString() string { return fmt.Sprintf("'%s'", sc.value) }
 
 // For Expression interface
 func (sc StrConstant) Evaluate(scan Scan) (Constant, error) { return sc, nil }

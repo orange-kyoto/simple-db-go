@@ -8,3 +8,7 @@ type CreateViewData struct {
 }
 
 func (*CreateViewData) SQLData() {}
+
+func (c *CreateViewData) GetViewDef() types.ViewDef {
+	return types.ViewDef(c.QueryData.ToString())
+}

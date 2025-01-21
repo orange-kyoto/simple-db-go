@@ -95,7 +95,7 @@ func (p *Predicate) EquatesWithFieldName(fieldName types.FieldName) (types.Field
 }
 
 func (p *Predicate) ToString() string {
-	termStrings := make([]string, len(p.terms))
+	termStrings := make([]string, 0, len(p.terms))
 	for _, term := range p.terms {
 		termStrings = append(termStrings, term.ToString())
 	}
