@@ -24,3 +24,7 @@ func (e FieldNameExpression) AppliesTo(schema *record.Schema) bool {
 func (e FieldNameExpression) ToString() string {
 	return string(e.fieldName)
 }
+
+func (e FieldNameExpression) GetFieldName() types.FieldName {
+	return e.fieldName
+}

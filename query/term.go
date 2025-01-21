@@ -1,6 +1,8 @@
 package query
 
 import (
+	"fmt"
+	"simple-db-go/constants"
 	"simple-db-go/record"
 	"simple-db-go/types"
 )
@@ -73,4 +75,50 @@ func (t *Term) EquatesWithFieldName(fieldName types.FieldName) (types.FieldName,
 
 func (t *Term) ToString() string {
 	return t.lhs.ToString() + " = " + t.rhs.ToString()
+}
+
+func (t *Term) GetReductionFactor(plan Plan) types.Int {
+	switch lhs := t.lhs.(type) {
+	case FieldNameExpression:
+		{
+			switch rhs := t.rhs.(type) {
+			case FieldNameExpression:
+				{
+					return max(
+						plan.GetDistinctValues(lhs.GetFieldName()),
+						plan.GetDistinctValues(rhs.GetFieldName()),
+					)
+				}
+			case Constant:
+				{
+					return plan.GetDistinctValues(lhs.GetFieldName())
+				}
+			default:
+				panic(fmt.Sprintf("Unexpected type: %T", rhs))
+			}
+		}
+	case Constant:
+		{
+			switch rhs := t.rhs.(type) {
+			case FieldNameExpression:
+				{
+					return plan.GetDistinctValues(rhs.GetFieldName())
+				}
+			case Constant:
+				{
+					if lhs == rhs {
+						// NOTE: 定数として一致した場合、この term は何もレコードをフィルタリングしない.
+						return 1
+					} else {
+						// NOTE: 定数として一致しない場合、この term は全てのレコードをフィルタリングする.
+						return constants.MAX_INT_VALUE
+					}
+				}
+			default:
+				panic(fmt.Sprintf("Unexpected type: %T", rhs))
+			}
+		}
+	default:
+		panic(fmt.Sprintf("Unexpected type: %T", lhs))
+	}
 }

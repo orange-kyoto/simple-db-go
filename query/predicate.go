@@ -101,3 +101,13 @@ func (p *Predicate) ToString() string {
 	}
 	return strings.Join(termStrings, " AND ")
 }
+
+func (p *Predicate) GetReductionFactor(plan Plan) types.Int {
+	result := types.Int(1)
+
+	for _, term := range p.terms {
+		result *= term.GetReductionFactor(plan)
+	}
+
+	return result
+}
