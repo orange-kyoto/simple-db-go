@@ -1,7 +1,6 @@
 package planning
 
 import (
-	"fmt"
 	"simple-db-go/query"
 	"simple-db-go/record"
 	"simple-db-go/types"
@@ -14,17 +13,16 @@ type ProjectPlan struct {
 	schema *record.Schema
 }
 
-func NewProjectPlan(plan query.Plan, fieldNames []types.FieldName) *ProjectPlan {
+func NewProjectPlan(plan query.Plan, fieldNames []types.FieldName) (*ProjectPlan, error) {
 	schema := record.NewSchema()
 	for _, fieldName := range fieldNames {
 		err := schema.Add(fieldName, plan.GetSchema())
 		if err != nil {
-			// 丁寧にハンドリングしたほうがいいかもだけど、だいぶ上のレイヤーに来たのでちょっと雑にする.
-			panic(fmt.Sprintf("ProjectPlan の生成でエラーが発生しました. err=%+v", err))
+			return nil, err
 		}
 	}
 
-	return &ProjectPlan{plan, schema}
+	return &ProjectPlan{plan, schema}, nil
 }
 
 func (p *ProjectPlan) Open() query.Scan {

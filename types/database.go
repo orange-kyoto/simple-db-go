@@ -28,5 +28,7 @@ type ViewName string
 // DB ビュー定義
 type ViewDef string
 
+func (v ViewDef) ToString() string { return string(v) }
+
 // DB インデックス名
 type IndexName string

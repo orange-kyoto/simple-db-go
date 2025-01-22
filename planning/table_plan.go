@@ -8,6 +8,8 @@ import (
 	"simple-db-go/types"
 )
 
+var _ query.Plan = (*TablePlan)(nil)
+
 type TablePlan struct {
 	transaction *transaction.Transaction
 	tableName   types.TableName
@@ -35,11 +37,11 @@ func (p *TablePlan) Open() query.Scan {
 	return query.NewTableScan(p.transaction, p.tableName, p.layout)
 }
 
-func (p *TablePlan) GetBlockAccessed() types.Int {
+func (p *TablePlan) GetBlocksAccessed() types.Int {
 	return p.statInfo.GetBlocksAccessed()
 }
 
-func (p *TablePlan) GetRecordOutput() types.Int {
+func (p *TablePlan) GetRecordsOutput() types.Int {
 	return p.statInfo.GetRecordsOutput()
 }
 
