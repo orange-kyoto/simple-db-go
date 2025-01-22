@@ -18,6 +18,8 @@ type IntConstant struct {
 	value types.Int
 }
 
+func (ic IntConstant) GetValue() types.Int { return ic.value }
+
 // For Constant interface
 func (ic IntConstant) Constant()        {}
 func (ic IntConstant) ToString() string { return ic.value.ToString() }
@@ -29,6 +31,8 @@ func (ic IntConstant) AppliesTo(schema *record.Schema) bool { return true }
 type StrConstant struct {
 	value string
 }
+
+func (sc StrConstant) GetValue() string { return sc.value }
 
 // For Constant interface
 func (sc StrConstant) Constant()        {}

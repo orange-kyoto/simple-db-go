@@ -6,6 +6,9 @@ import (
 	"simple-db-go/types"
 )
 
+var _ Scan = (*SelectScan)(nil)
+var _ UpdateScan = (*SelectScan)(nil)
+
 type SelectScan struct {
 	scan      Scan
 	predicate *Predicate

@@ -8,6 +8,9 @@ import (
 	"simple-db-go/types"
 )
 
+var _ Scan = (*TableScan)(nil)
+var _ UpdateScan = (*TableScan)(nil)
+
 // 単一のテーブルに対してのレコードアクセスを管理する.
 // ブロックの存在を意識せず、論理的なレコード操作が可能になる.
 type TableScan struct {
@@ -135,9 +138,27 @@ func (ts *TableScan) SetString(fieldName types.FieldName, val string) error {
 	return ts.recordPage.SetString(ts.currentSlotNumber, fieldName, val)
 }
 
-// TODO: Chapter8 で実装する.
-// `Constant` は int, string の抽象化だそう.
-// func (ts *TableScan) SetValue(fieldName, value Constant)
+// NOTE: UpdateScan interface の要件.
+func (ts *TableScan) SetValue(fieldName types.FieldName, value Constant) error {
+	fieldType, err := ts.layout.GetSchema().FieldType(fieldName)
+	if err != nil {
+		return err
+	}
+
+	if fieldType == constants.INTEGER {
+		err := ts.SetInt(fieldName, value.(IntConstant).GetValue())
+		if err != nil {
+			return err
+		}
+	} else {
+		err := ts.SetString(fieldName, value.(StrConstant).GetValue())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // 現在の RecordID を返す.
 func (ts *TableScan) GetCurrentRecordID() record.RecordID {
