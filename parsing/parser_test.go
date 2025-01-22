@@ -14,7 +14,7 @@ func TestParserParseQuery(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		inputSql     string
+		inputSql     types.SQL
 		expectedData *data.QueryData
 		expectedSql  string
 	}{
@@ -100,7 +100,7 @@ func TestParserParseInsert(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
+		sql      types.SQL
 		expected *data.InsertData
 	}{
 		{
@@ -138,7 +138,7 @@ func TestParserParseDelete(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
+		sql      types.SQL
 		expected *data.DeleteData
 	}{
 		{
@@ -193,7 +193,7 @@ func TestParserParseModify(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
+		sql      types.SQL
 		expected *data.ModifyData
 	}{
 		{
@@ -254,7 +254,7 @@ func TestParserParseCreateTable(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
+		sql      types.SQL
 		expected *data.CreateTableData
 	}{
 		{
@@ -300,7 +300,7 @@ func TestParserParseCreateView(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		inputSql        string
+		inputSql        types.SQL
 		expectedData    *data.CreateViewData
 		expectedViewDef types.ViewDef
 	}{
@@ -361,7 +361,7 @@ func TestParserParseCreateIndex(t *testing.T) {
 	parser := NewParser()
 
 	tests := []struct {
-		sql      string
+		sql      types.SQL
 		expected *data.CreateIndexData
 	}{
 		{
