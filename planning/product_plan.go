@@ -14,7 +14,7 @@ type ProductPlan struct {
 	schema *record.Schema
 }
 
-func NewProductPlan(plan1 query.Plan, plan2 query.Plan) *ProductPlan {
+func NewProductPlan(plan1 query.Plan, plan2 query.Plan) query.Plan {
 	schema := record.NewSchema()
 	schema.AddAll(plan1.GetSchema())
 	schema.AddAll(plan2.GetSchema())

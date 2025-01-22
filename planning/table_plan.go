@@ -17,7 +17,7 @@ type TablePlan struct {
 	statInfo    *metadata.StatInfo
 }
 
-func NewTablePlan(transaction *transaction.Transaction, tableName types.TableName, metadataManager *metadata.MetadataManager) (*TablePlan, error) {
+func NewTablePlan(transaction *transaction.Transaction, tableName types.TableName, metadataManager *metadata.MetadataManager) (query.Plan, error) {
 	layout, err := metadataManager.GetLayout(tableName, transaction)
 	if err != nil {
 		return nil, err

@@ -13,7 +13,7 @@ type SelectPlan struct {
 	predicate *query.Predicate
 }
 
-func NewSelectPlan(plan query.Plan, predicate *query.Predicate) *SelectPlan {
+func NewSelectPlan(plan query.Plan, predicate *query.Predicate) query.Plan {
 	return &SelectPlan{plan: plan, predicate: predicate}
 }
 

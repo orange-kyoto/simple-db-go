@@ -13,7 +13,7 @@ type ProjectPlan struct {
 	schema *record.Schema
 }
 
-func NewProjectPlan(plan query.Plan, fieldNames []types.FieldName) (*ProjectPlan, error) {
+func NewProjectPlan(plan query.Plan, fieldNames []types.FieldName) (query.Plan, error) {
 	schema := record.NewSchema()
 	for _, fieldName := range fieldNames {
 		err := schema.Add(fieldName, plan.GetSchema())
