@@ -22,7 +22,7 @@ func TestParserParseQuery(t *testing.T) {
 			`SELECT id FROM users`,
 			&data.QueryData{
 				FieldNames: []types.FieldName{"id"},
-				TableNames: []types.TableName{"users"},
+				Queryables: []data.Queryable{"users"},
 				Predicate:  nil,
 			},
 			`SELECT id FROM users;`,
@@ -31,7 +31,7 @@ func TestParserParseQuery(t *testing.T) {
 			`select id, name, age from users, orders;`,
 			&data.QueryData{
 				FieldNames: []types.FieldName{"id", "name", "age"},
-				TableNames: []types.TableName{"users", "orders"},
+				Queryables: []data.Queryable{"users", "orders"},
 				Predicate:  nil,
 			},
 			`SELECT id, name, age FROM users, orders;`,
@@ -40,7 +40,7 @@ func TestParserParseQuery(t *testing.T) {
 			`SELECT id, name, age FROM users WHERE name = 'hoge'`,
 			&data.QueryData{
 				FieldNames: []types.FieldName{"id", "name", "age"},
-				TableNames: []types.TableName{"users"},
+				Queryables: []data.Queryable{"users"},
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("name"),
@@ -54,7 +54,7 @@ func TestParserParseQuery(t *testing.T) {
 			`SELECT id, name, age FROM users WHERE id = 1;`,
 			&data.QueryData{
 				FieldNames: []types.FieldName{"id", "name", "age"},
-				TableNames: []types.TableName{"users"},
+				Queryables: []data.Queryable{"users"},
 				Predicate: query.NewPredicateWith(
 					query.NewTerm(
 						query.NewFieldNameExpression("id"),
@@ -68,7 +68,7 @@ func TestParserParseQuery(t *testing.T) {
 			`SELECT id, name, age FROM users WHERE id = 1 AND name = 'hoge'`,
 			&data.QueryData{
 				FieldNames: []types.FieldName{"id", "name", "age"},
-				TableNames: []types.TableName{"users"},
+				Queryables: []data.Queryable{"users"},
 				Predicate: query.NewPredicateFrom(
 					[]*query.Term{
 						query.NewTerm(
@@ -310,7 +310,7 @@ func TestParserParseCreateView(t *testing.T) {
 				ViewName: "view1",
 				QueryData: &data.QueryData{
 					FieldNames: []types.FieldName{"id", "name"},
-					TableNames: []types.TableName{"users"},
+					Queryables: []data.Queryable{"users"},
 					Predicate:  nil,
 				},
 			},
@@ -322,7 +322,7 @@ func TestParserParseCreateView(t *testing.T) {
 				ViewName: "view2",
 				QueryData: &data.QueryData{
 					FieldNames: []types.FieldName{"id", "name", "age"},
-					TableNames: []types.TableName{"users"},
+					Queryables: []data.Queryable{"users"},
 					Predicate: query.NewPredicateWith(
 						query.NewTerm(
 							query.NewFieldNameExpression("age"),
@@ -339,7 +339,7 @@ func TestParserParseCreateView(t *testing.T) {
 				ViewName: "view1",
 				QueryData: &data.QueryData{
 					FieldNames: []types.FieldName{"id", "name"},
-					TableNames: []types.TableName{"users"},
+					Queryables: []data.Queryable{"users"},
 					Predicate:  nil,
 				},
 			},
