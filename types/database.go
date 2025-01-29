@@ -28,5 +28,10 @@ type ViewName string
 // DB ビュー定義
 type ViewDef string
 
+func (v ViewDef) ToSQL() SQL { return SQL(v) }
+
 // DB インデックス名
 type IndexName string
+
+// SQL 文
+type SQL string

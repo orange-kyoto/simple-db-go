@@ -6,6 +6,7 @@ import (
 	"simple-db-go/file"
 	"simple-db-go/log"
 	"simple-db-go/metadata"
+	"simple-db-go/planning"
 	"simple-db-go/transaction"
 	"sync"
 )
@@ -15,6 +16,7 @@ type SimpleDB struct {
 	logManager      *log.LogManager
 	bufferManager   *buffer.BufferManager
 	metadataManager *metadata.MetadataManager
+	planner         *planning.Planner
 }
 
 var (
@@ -38,11 +40,16 @@ func NewSimpleDB(config config.DBConfig) *SimpleDB {
 
 		metadataManager := metadata.NewMetadataManager(isNew, transaction)
 
+		queryPlanner := planning.NewBasicQueryPlanner(metadataManager)
+		updatePlanner := planning.NewBasicUpdatePlanner(metadataManager)
+		planner := planning.NewPlanner(queryPlanner, updatePlanner)
+
 		simpleDBInstance = &SimpleDB{
 			fileManager:     fileManager,
 			logManager:      logManager,
 			bufferManager:   bufferManager,
 			metadataManager: metadataManager,
+			planner:         planner,
 		}
 	})
 

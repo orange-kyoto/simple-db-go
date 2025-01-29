@@ -7,7 +7,7 @@ import (
 
 type Query struct {
 	FieldNames []types.FieldName `"SELECT" @Ident ( "," @Ident )*`
-	TableNames []types.TableName `"FROM" @Ident ( "," @Ident )*`
+	Queryables []data.Queryable  `"FROM" @Ident ( "," @Ident )*`
 	Where      *Predicate        `( "WHERE" @@ ( "AND" @@ )* )? ";"?`
 }
 
@@ -25,14 +25,14 @@ func (q *Query) ToData() data.SQLData {
 	if q.Where == nil {
 		return &data.QueryData{
 			FieldNames: q.FieldNames,
-			TableNames: q.TableNames,
+			Queryables: q.Queryables,
 			Predicate:  nil,
 		}
 	}
 
 	return &data.QueryData{
 		FieldNames: q.FieldNames,
-		TableNames: q.TableNames,
+		Queryables: q.Queryables,
 		Predicate:  q.Where.ToQueryPredicate(),
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 type QueryData struct {
 	FieldNames []types.FieldName
-	TableNames []types.TableName
+	Queryables []Queryable
 	Predicate  *query.Predicate
 }
 
@@ -21,23 +21,23 @@ func (q *QueryData) ToString() string {
 		fieldNames = append(fieldNames, string(fieldName))
 	}
 
-	tableNames := make([]string, 0, len(q.TableNames))
-	for _, tableName := range q.TableNames {
-		tableNames = append(tableNames, string(tableName))
+	queryables := make([]string, 0, len(q.Queryables))
+	for _, tableName := range q.Queryables {
+		queryables = append(queryables, string(tableName.ToString()))
 	}
 
 	if q.Predicate == nil {
 		return fmt.Sprintf(
 			"SELECT %s FROM %s;",
 			strings.Join(fieldNames, ", "),
-			strings.Join(tableNames, ", "),
+			strings.Join(queryables, ", "),
 		)
 	}
 
 	return fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s;",
 		strings.Join(fieldNames, ", "),
-		strings.Join(tableNames, ", "),
+		strings.Join(queryables, ", "),
 		q.Predicate.ToString(),
 	)
 }
