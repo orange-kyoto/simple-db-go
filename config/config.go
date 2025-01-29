@@ -62,19 +62,19 @@ const (
 )
 
 func readDbDirectoty() string {
-	return readStringConfig("SIMPLE_DB_DIRECTORY")
+	return readStringConfig(SIMPLE_DB_DIRECTORY_ENV)
 }
 
 func readLogFileName() string {
-	return readStringConfig("SIMPLE_DB_LOG_FILE_NAME")
+	return readStringConfig(SIMPLE_DB_LOG_FILE_NAME_ENV)
 }
 
 func readBlockSize() types.Int {
-	return readIntConfig("SIMPLE_DB_BLOCK_SIZE")
+	return readIntConfig(SIMPLE_DB_BLOCK_SIZE_ENV)
 }
 
 func readBufferPoolSize() types.Int {
-	return readIntConfig("SIMPLE_DB_BUFFER_POOL_SIZE")
+	return readIntConfig(SIMPLE_DB_BUFFER_POOL_SIZE_ENV)
 }
 
 func readStringConfig(envVar string) string {
