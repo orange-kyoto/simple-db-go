@@ -3,7 +3,6 @@ package parsing
 import (
 	"simple-db-go/parsing/data"
 	"simple-db-go/parsing/grammar"
-	"simple-db-go/types"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -35,7 +34,7 @@ func NewParser() *Parser {
 	)}
 }
 
-func (p *Parser) Parse(sql types.SQL) (data.SQLData, error) {
+func (p *Parser) Parse(sql string) (data.SQLData, error) {
 	parsedSql, err := p.parser.ParseString("SimpleDB Parser", string(sql))
 	if err != nil {
 		return nil, err

@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var _ SQLData = (*QueryData)(nil)
+
 type QueryData struct {
 	FieldNames []types.FieldName
 	Queryables []Queryable

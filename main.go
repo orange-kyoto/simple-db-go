@@ -11,12 +11,17 @@ import (
 )
 
 func main() {
+	dbConfig := config.NewDBConfig()
+	simpleDB := db.NewSimpleDB(dbConfig)
+
 	// Listen for connections on localhost port 4000
 	l, err := net.Listen("tcp", "127.0.0.1:4000")
 	if err != nil {
 		logger.Error(err.Error())
 		panic(err.Error())
 	}
+
+	logger.Info("SimpleDB サーバー起動！")
 
 	// Accept a new connection once
 	c, err := l.Accept()
@@ -25,9 +30,6 @@ func main() {
 		panic(err.Error())
 	}
 
-	dbConfig := config.NewDBConfig()
-	simpleDB := db.NewSimpleDB(dbConfig)
-
 	// Create a connection with user root and an empty password.
 	// You can use your own handler to handle command here.
 	conn, err := server.NewConn(c, "root", "", simpleDBServer.NewHandler(dbConfig, simpleDB))
@@ -35,8 +37,6 @@ func main() {
 		logger.Error(err.Error())
 		panic(err.Error())
 	}
-
-	logger.Info("SimpleDB サーバー起動！")
 
 	// as long as the client keeps sending commands, keep handling them
 	for {

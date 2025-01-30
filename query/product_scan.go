@@ -4,6 +4,8 @@ import (
 	"simple-db-go/types"
 )
 
+var _ Scan = (*ProductScan)(nil)
+
 type ProductScan struct {
 	scan1 Scan
 	scan2 Scan
@@ -60,4 +62,8 @@ func (ps *ProductScan) HasField(fieldName types.FieldName) bool {
 func (ps *ProductScan) Close() {
 	ps.scan1.Close()
 	ps.scan2.Close()
+}
+
+func (ps *ProductScan) GetFields() []types.FieldName {
+	return append(ps.scan1.GetFields(), ps.scan2.GetFields()...)
 }

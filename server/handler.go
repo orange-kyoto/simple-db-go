@@ -5,6 +5,8 @@ import (
 	"simple-db-go/config"
 	"simple-db-go/db"
 	"simple-db-go/logger"
+	"simple-db-go/planning"
+	"simple-db-go/transaction"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/server"
@@ -13,16 +15,21 @@ import (
 var _ server.Handler = (*SimpleDBSQLHandler)(nil)
 
 type SimpleDBSQLHandler struct {
-	dbConfig config.DBConfig
-	simpleDb *db.SimpleDB
+	dbConfig    config.DBConfig
+	simpleDb    *db.SimpleDB
+	transaction *transaction.Transaction
+	planner     *planning.Planner
 }
 
 func NewHandler(dbConfig config.DBConfig, simpleDb *db.SimpleDB) *SimpleDBSQLHandler {
-	return &SimpleDBSQLHandler{dbConfig, simpleDb}
+	queryPlanner := planning.NewBasicQueryPlanner(simpleDb.GetMetadataManager())
+	updatePlanner := planning.NewBasicUpdatePlanner(simpleDb.GetMetadataManager())
+	planner := planning.NewPlanner(queryPlanner, updatePlanner)
+	transaction := simpleDb.NewTransaction()
+
+	return &SimpleDBSQLHandler{dbConfig, simpleDb, transaction, planner}
 }
 
-// DB が存在するかどうかチェックすれば良さそうやな。
-// 今回は起動時に1つだけDBがある想定なので、それに一致するかどうか？で判断すればいい。
 func (h *SimpleDBSQLHandler) UseDB(dbName string) error {
 	// dbConfig から、DBディレクトリを取得し、そのディレクトリが存在するか？だけチェックすればいい。
 	dbDirectory := h.dbConfig.GetDBDirectory()
@@ -37,14 +44,33 @@ func (h *SimpleDBSQLHandler) UseDB(dbName string) error {
 
 // handle COM_QUERY command, like SELECT, INSERT, UPDATE, etc...
 // If Result has a Resultset (SELECT, SHOW, etc...), we will send this as the response, otherwise, we will send Result
-func (h *SimpleDBSQLHandler) HandleQuery(query string) (*mysql.Result, error) {
-	// これが一番大事そうかつ、これがやりたかったこと！
-	// 試しに、いつでも固定の値を返す処理を入れてみるか？
+func (h *SimpleDBSQLHandler) HandleQuery(sql string) (*mysql.Result, error) {
+	logger.Infof("HandleQuery: %s\n", sql)
 
-	logger.Infof("HandleQuery: %s\n", query)
-	result := new(mysql.Result)
-	result.Status = mysql.SERVER_STATUS_AUTOCOMMIT
-	return result, nil
+	queryPlan, err1 := h.planner.CreateQueryPlan(sql, h.transaction)
+	if err1 == nil {
+		scan := queryPlan.Open()
+		defer scan.Close()
+
+		resultSet, err := buildResultsetFrom(scan)
+		if err != nil {
+			return nil, err
+		}
+		result := mysql.NewResult(resultSet)
+		result.Status = mysql.SERVER_STATUS_IN_TRANS // AUTOCOMMIT=off がデフォルトの想定とし、接続時にはトランザクションが開始されるものとする.
+
+		return result, nil
+	} else {
+		affectedRows, err2 := h.planner.ExecuteUpdate(sql, h.transaction)
+		if err2 == nil {
+			result := mysql.NewResult(nil)
+			result.Status = mysql.SERVER_STATUS_IN_TRANS // AUTOCOMMIT=off がデフォルトの想定とする.
+			result.AffectedRows = uint64(affectedRows)
+			return result, nil
+		} else {
+			return nil, HandleQueryError{createQueryPlanError: err1, executeUpdateError: err2}
+		}
+	}
 }
 
 // handle COM_FILED_LIST command
