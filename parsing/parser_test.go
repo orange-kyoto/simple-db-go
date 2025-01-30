@@ -390,3 +390,47 @@ func TestParserParseCreateIndex(t *testing.T) {
 		}
 	}
 }
+
+func TestParserParseCommit(t *testing.T) {
+	parser := NewParser()
+
+	tests := []struct {
+		sql      string
+		expected *data.CommitData
+	}{
+		{`COMMIT;`, &data.CommitData{}},
+		{`COMMIT`, &data.CommitData{}},
+		{`commit;`, &data.CommitData{}},
+		{`commit`, &data.CommitData{}},
+	}
+
+	for i, test := range tests {
+		result, err := parser.Parse(test.sql)
+		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
+			assert.IsTypef(t, &data.CommitData{}, result, "[i=%d] result が *CommitData であること.", i)
+			assert.Equalf(t, test.expected, result, "[i=%d] CommitData が期待通りであること.", i)
+		}
+	}
+}
+
+func TestParserParseRollback(t *testing.T) {
+	parser := NewParser()
+
+	tests := []struct {
+		sql      string
+		expected *data.RollbackData
+	}{
+		{`ROLLBACK;`, &data.RollbackData{}},
+		{`ROLLBACK`, &data.RollbackData{}},
+		{`rollback;`, &data.RollbackData{}},
+		{`rollback`, &data.RollbackData{}},
+	}
+
+	for i, test := range tests {
+		result, err := parser.Parse(test.sql)
+		if assert.NoErrorf(t, err, "[i=%d] パースエラーが起きないこと.", i) {
+			assert.IsTypef(t, &data.RollbackData{}, result, "[i=%d] result が *RollbackData であること.", i)
+			assert.Equalf(t, test.expected, result, "[i=%d] RollbackData が期待通りであること.", i)
+		}
+	}
+}

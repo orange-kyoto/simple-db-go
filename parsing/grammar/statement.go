@@ -20,5 +20,7 @@ func StatementUnion() participle.Option {
 		&CreateTableCmd{},
 		&CreateViewCmd{},
 		&CreateIndexCmd{},
+		&Commit{},
+		&Rollback{},
 	)
 }
