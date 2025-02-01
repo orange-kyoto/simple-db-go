@@ -47,30 +47,22 @@ func (h *SimpleDBSQLHandler) UseDB(dbName string) error {
 func (h *SimpleDBSQLHandler) HandleQuery(sql string) (*mysql.Result, error) {
 	logger.Infof("HandleQuery: %s\n", sql)
 
-	queryPlan, err1 := h.planner.CreateQueryPlan(sql, h.transaction)
+	result, err1 := doQuery(h, sql)
 	if err1 == nil {
-		scan := queryPlan.Open()
-		defer scan.Close()
-
-		resultSet, err := buildResultsetFrom(scan)
-		if err != nil {
-			return nil, err
-		}
-		result := mysql.NewResult(resultSet)
-		result.Status = mysql.SERVER_STATUS_IN_TRANS // AUTOCOMMIT=off がデフォルトの想定とし、接続時にはトランザクションが開始されるものとする.
-
 		return result, nil
-	} else {
-		affectedRows, err2 := h.planner.ExecuteUpdate(sql, h.transaction)
-		if err2 == nil {
-			result := mysql.NewResult(nil)
-			result.Status = mysql.SERVER_STATUS_IN_TRANS // AUTOCOMMIT=off がデフォルトの想定とする.
-			result.AffectedRows = uint64(affectedRows)
-			return result, nil
-		} else {
-			return nil, HandleQueryError{createQueryPlanError: err1, executeUpdateError: err2}
-		}
 	}
+
+	result, err2 := doUpdate(h, sql)
+	if err2 == nil {
+		return result, nil
+	}
+
+	result, err3 := doTransactionCommand(h, sql)
+	if err3 == nil {
+		return result, nil
+	}
+
+	return nil, HandleQueryError{err1, err2, err3}
 }
 
 // handle COM_FILED_LIST command
@@ -119,4 +111,8 @@ func (h *SimpleDBSQLHandler) HandleOtherCommand(cmd byte, data []byte) error {
 		logger.Infof("Unknown command: %d\n", cmd)
 	}
 	return nil
+}
+
+func (h *SimpleDBSQLHandler) renewTransaction() {
+	h.transaction = h.simpleDb.NewTransaction()
 }
