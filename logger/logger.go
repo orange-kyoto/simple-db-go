@@ -1,9 +1,7 @@
 package logger
 
 import (
-	"fmt"
 	"os"
-	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -11,13 +9,7 @@ import (
 var logger zerolog.Logger
 
 func init() {
-	os.MkdirAll("var", 0755)
-	logFilePath := "var/simple-db-go." + time.Now().Format("20060102-150405") + ".log"
-	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		panic(fmt.Sprintf("ロギングのためのファイルを開くことができませんでした. err=%+v", err))
-	}
-	logger = zerolog.New(file).With().Timestamp().Logger()
+	logger = zerolog.New(os.Stdout).With().Timestamp().Logger().Level(zerolog.InfoLevel)
 }
 
 func Debug(msg string) {
