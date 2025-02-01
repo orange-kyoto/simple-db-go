@@ -29,6 +29,11 @@ func (s *SelectScan) BeforeFirst() {
 // NOTE: 与えられたpredicateが満たされるまでscanを進める.
 func (s *SelectScan) Next() bool {
 	for s.scan.Next() {
+		// これは WHERE 句が無い SELECT に相当する. 無条件で true を返す.
+		if s.predicate == nil {
+			return true
+		}
+
 		isSatisfied, err := s.predicate.IsSatisfied(s.scan)
 		if err != nil {
 			// このエラーがあるなら、Next() も (bool, error) を返すように変更するべきかもしれない.
@@ -61,6 +66,10 @@ func (s *SelectScan) HasField(fieldName types.FieldName) bool {
 
 func (s *SelectScan) Close() {
 	s.scan.Close()
+}
+
+func (s *SelectScan) GetFields() []types.FieldName {
+	return s.scan.GetFields()
 }
 
 // ----------------------------------------

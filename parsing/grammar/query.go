@@ -5,6 +5,8 @@ import (
 	"simple-db-go/types"
 )
 
+var _ Statement = (*Query)(nil)
+
 type Query struct {
 	FieldNames []types.FieldName `"SELECT" @Ident ( "," @Ident )*`
 	Queryables []data.Queryable  `"FROM" @Ident ( "," @Ident )*`

@@ -2,11 +2,10 @@ package planning
 
 import (
 	"fmt"
-	"simple-db-go/types"
 )
 
 type NotQueryStatementError struct {
-	sql types.SQL
+	sql string
 }
 
 func (e NotQueryStatementError) Error() string {
@@ -14,7 +13,7 @@ func (e NotQueryStatementError) Error() string {
 }
 
 type NotUpdateStatementError struct {
-	sql types.SQL
+	sql string
 }
 
 func (e NotUpdateStatementError) Error() string {

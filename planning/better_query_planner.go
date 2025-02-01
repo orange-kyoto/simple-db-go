@@ -25,7 +25,7 @@ func (p *BetterQueryPlanner) CreatePlan(queryData *data.QueryData, transaction *
 		viewDef, err := p.metadataManager.GetViewDef(queryable.ToViewName(), transaction)
 		if err == nil { // queryable is view.
 			parser := parsing.NewParser()
-			viewData, err := parser.Parse(viewDef.ToSQL())
+			viewData, err := parser.Parse(string(viewDef))
 			if err != nil {
 				return nil, err
 			}

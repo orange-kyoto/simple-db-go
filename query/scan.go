@@ -21,4 +21,6 @@ type Scan interface {
 	HasField(fieldName types.FieldName) bool
 
 	Close()
+
+	GetFields() []types.FieldName
 }

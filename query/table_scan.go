@@ -146,12 +146,12 @@ func (ts *TableScan) SetValue(fieldName types.FieldName, value Constant) error {
 	}
 
 	if fieldType == constants.INTEGER {
-		err := ts.SetInt(fieldName, value.(IntConstant).GetValue())
+		err := ts.SetInt(fieldName, value.GetValue().(types.Int))
 		if err != nil {
 			return err
 		}
 	} else {
-		err := ts.SetString(fieldName, value.(StrConstant).GetValue())
+		err := ts.SetString(fieldName, value.GetValue().(string))
 		if err != nil {
 			return err
 		}
@@ -171,6 +171,10 @@ func (ts *TableScan) Delete() {
 	if ts.currentSlotNumber != record.NULL_SLOT_NUMBER {
 		ts.recordPage.Delete(ts.currentSlotNumber)
 	}
+}
+
+func (ts *TableScan) GetFields() []types.FieldName {
+	return ts.layout.GetSchema().Fields()
 }
 
 // 指定したブロック番号に移動する.

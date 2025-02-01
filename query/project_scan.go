@@ -4,6 +4,8 @@ import (
 	"simple-db-go/types"
 )
 
+var _ Scan = (*ProjectScan)(nil)
+
 type ProjectScan struct {
 	scan          Scan
 	fieldNameList []types.FieldName
@@ -56,4 +58,8 @@ func (ps *ProjectScan) HasField(fieldName types.FieldName) bool {
 
 func (ps *ProjectScan) Close() {
 	ps.scan.Close()
+}
+
+func (ps *ProjectScan) GetFields() []types.FieldName {
+	return ps.fieldNameList
 }

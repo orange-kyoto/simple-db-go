@@ -17,7 +17,7 @@ func NewPlanner(queryPlanner QueryPlanner, updatePlanner UpdatePlanner) *Planner
 	return &Planner{queryPlanner, updatePlanner}
 }
 
-func (p *Planner) CreateQueryPlan(sql types.SQL, transaction *transaction.Transaction) (query.Plan, error) {
+func (p *Planner) CreateQueryPlan(sql string, transaction *transaction.Transaction) (query.Plan, error) {
 	parser := parsing.NewParser()
 	sqlData, err := parser.Parse(sql)
 	if err != nil {
@@ -31,7 +31,7 @@ func (p *Planner) CreateQueryPlan(sql types.SQL, transaction *transaction.Transa
 	}
 }
 
-func (p *Planner) ExecuteUpdate(sql types.SQL, transaction *transaction.Transaction) (types.Int, error) {
+func (p *Planner) ExecuteUpdate(sql string, transaction *transaction.Transaction) (types.Int, error) {
 	parser := parsing.NewParser()
 	sqlData, err := parser.Parse(sql)
 	if err != nil {

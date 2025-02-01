@@ -13,5 +13,12 @@ type Expression interface {
 // IntConstant, StrConstant に共通した振る舞いを持たせることを意図する.
 type Constant interface {
 	Constant()
+
+	// string or types.Int を返すことを意図している（雑な実装ではある）
+	GetValue() any
+
+	// string or types.Int を返すことを意図している（雑な実装ではある）
+	GetRawValue() any
+
 	ToString() string
 }
