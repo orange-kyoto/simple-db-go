@@ -27,7 +27,7 @@ func (rp *RecordPage) GetBlockID() file.BlockID {
 	return rp.blockID
 }
 
-func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName types.FieldName) (types.Int, error) {
+func (rp *RecordPage) GetInt(slotNumber types.SlotNumber, fieldName types.FieldName) (types.Int, error) {
 	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	if err != nil {
 		return 0, err
@@ -35,7 +35,7 @@ func (rp *RecordPage) GetInt(slotNumber SlotNumber, fieldName types.FieldName) (
 	return rp.transaction.GetInt(rp.blockID, types.Int(fieldOffset)), nil
 }
 
-func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName types.FieldName) (string, error) {
+func (rp *RecordPage) GetString(slotNumber types.SlotNumber, fieldName types.FieldName) (string, error) {
 	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	if err != nil {
 		return "", err
@@ -43,7 +43,7 @@ func (rp *RecordPage) GetString(slotNumber SlotNumber, fieldName types.FieldName
 	return rp.transaction.GetString(rp.blockID, types.Int(fieldOffset)), nil
 }
 
-func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName types.FieldName, value types.Int) error {
+func (rp *RecordPage) SetInt(slotNumber types.SlotNumber, fieldName types.FieldName, value types.Int) error {
 	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func (rp *RecordPage) SetInt(slotNumber SlotNumber, fieldName types.FieldName, v
 	return nil
 }
 
-func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName types.FieldName, value string) error {
+func (rp *RecordPage) SetString(slotNumber types.SlotNumber, fieldName types.FieldName, value string) error {
 	fieldOffset, err := rp.getFieldOffsetInPage(slotNumber, fieldName)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (rp *RecordPage) SetString(slotNumber SlotNumber, fieldName types.FieldName
 // このレコードページ内の全てのスロットを初期化する.
 // 整数は0、文字列は空文字列に初期化する.
 func (rp *RecordPage) Format() {
-	for slotNumber := SlotNumber(0); rp.isValidSlot(slotNumber); slotNumber++ {
+	for slotNumber := types.SlotNumber(0); rp.isValidSlot(slotNumber); slotNumber++ {
 		// フラグの初期値を EMPTY に設定する.
 		slotOffset := rp.getSlotOffset(slotNumber)
 		rp.transaction.SetInt(rp.blockID, types.Int(slotOffset), types.Int(SLOT_EMPTY), false)
@@ -98,20 +98,20 @@ func (rp *RecordPage) Format() {
 }
 
 // スロットのフラグに EMPTY をセットする.
-func (rp *RecordPage) Delete(slotNumber SlotNumber) {
+func (rp *RecordPage) Delete(slotNumber types.SlotNumber) {
 	rp.setSlotFlag(slotNumber, SLOT_EMPTY)
 }
 
 // 引数で指定したスロットの後ろにある、使用されている最初のスロットIDを返す.
 // そのようなスロットが存在しない場合は、-1を返す.
-func (rp *RecordPage) FindUsedSlotAfter(slotNumber SlotNumber) SlotNumber {
+func (rp *RecordPage) FindUsedSlotAfter(slotNumber types.SlotNumber) types.SlotNumber {
 	return rp.searchAfter(slotNumber, SLOT_INUSE)
 }
 
 // 引数で指定したスロットの後ろにある、使用されていない最初のスロットIDを返す.
 // もし見つかれば、そのスロットのフラグを使用中に変更する.
 // そのようなスロットが存在しない場合は、-1を返す.
-func (rp *RecordPage) FindEmptySlotAfter(slotNumber SlotNumber) SlotNumber {
+func (rp *RecordPage) FindEmptySlotAfter(slotNumber types.SlotNumber) types.SlotNumber {
 	newSlot := rp.searchAfter(slotNumber, SLOT_EMPTY)
 	if SlotExists(newSlot) {
 		rp.setSlotFlag(newSlot, SLOT_INUSE)
@@ -119,12 +119,12 @@ func (rp *RecordPage) FindEmptySlotAfter(slotNumber SlotNumber) SlotNumber {
 	return newSlot
 }
 
-func (rp *RecordPage) setSlotFlag(slotNumber SlotNumber, slotFlag SlotFlag) {
+func (rp *RecordPage) setSlotFlag(slotNumber types.SlotNumber, slotFlag SlotFlag) {
 	slotOffset := rp.getSlotOffset(slotNumber)
 	rp.transaction.SetInt(rp.blockID, types.Int(slotOffset), types.Int(slotFlag), true)
 }
 
-func (rp *RecordPage) searchAfter(slotNumber SlotNumber, slotFlag SlotFlag) SlotNumber {
+func (rp *RecordPage) searchAfter(slotNumber types.SlotNumber, slotFlag SlotFlag) types.SlotNumber {
 	for targetSlotNumber := slotNumber + 1; rp.isValidSlot(targetSlotNumber); targetSlotNumber++ {
 		slotOffset := rp.getSlotOffset(targetSlotNumber)
 		if rp.transaction.GetInt(rp.blockID, types.Int(slotOffset)) == types.Int(slotFlag) {
@@ -134,15 +134,15 @@ func (rp *RecordPage) searchAfter(slotNumber SlotNumber, slotFlag SlotFlag) Slot
 	return NULL_SLOT_NUMBER
 }
 
-func (rp *RecordPage) isValidSlot(slotNumber SlotNumber) bool {
+func (rp *RecordPage) isValidSlot(slotNumber types.SlotNumber) bool {
 	return types.Int(rp.getSlotOffset(slotNumber+1)) <= rp.transaction.BlockSize()
 }
 
-func (rp *RecordPage) getSlotOffset(slotNumber SlotNumber) SlotOffset {
+func (rp *RecordPage) getSlotOffset(slotNumber types.SlotNumber) SlotOffset {
 	return SlotOffset(types.Int(slotNumber) * types.Int(rp.layout.GetSlotSize()))
 }
 
-func (rp *RecordPage) getFieldOffsetInPage(slotNumber SlotNumber, fieldName types.FieldName) (FieldOffsetInPage, error) {
+func (rp *RecordPage) getFieldOffsetInPage(slotNumber types.SlotNumber, fieldName types.FieldName) (FieldOffsetInPage, error) {
 	slotOffset := rp.getSlotOffset(slotNumber)
 	fieldOffsetInSlot, err := rp.layout.GetOffset(fieldName)
 	if err != nil {

@@ -2,11 +2,8 @@ package record
 
 import "simple-db-go/types"
 
-// スロット番号. 0 から始まる.
-type SlotNumber types.Int
-
 // スロットが存在しないことを示す特別なスロット番号.
-const NULL_SLOT_NUMBER SlotNumber = -1
+const NULL_SLOT_NUMBER types.SlotNumber = -1
 
 // レコードページ内における、スロットのオフセット
 // slot_offset = slot_number * slot_size
@@ -42,6 +39,6 @@ func calcFieldOffsetInPage(slotOffset SlotOffset, fieldOffset types.FieldOffsetI
 	return FieldOffsetInPage(types.Int(slotOffset) + types.Int(fieldOffset))
 }
 
-func SlotExists(slotNumber SlotNumber) bool {
+func SlotExists(slotNumber types.SlotNumber) bool {
 	return slotNumber > NULL_SLOT_NUMBER
 }

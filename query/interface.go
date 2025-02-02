@@ -21,4 +21,6 @@ type Constant interface {
 	GetRawValue() any
 
 	ToString() string
+
+	HashCode() uint32
 }

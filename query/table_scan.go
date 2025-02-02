@@ -18,7 +18,7 @@ type TableScan struct {
 	layout            *record.Layout
 	recordPage        *record.RecordPage
 	fileName          string
-	currentSlotNumber record.SlotNumber
+	currentSlotNumber types.SlotNumber
 }
 
 func NewTableScan(transaction *transaction.Transaction, tableName types.TableName, layout *record.Layout) *TableScan {

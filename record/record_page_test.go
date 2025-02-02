@@ -25,7 +25,7 @@ func TestRecordPageFormat(t *testing.T) {
 		blockSize := types.Int(512)
 		slotSize := types.Int(4 + 4 + (4 + 10) + 4) // 26
 
-		slotNumber := SlotNumber(0)
+		slotNumber := types.SlotNumber(0)
 		for ; types.Int(slotNumber+1)*slotSize < blockSize; slotNumber++ {
 			slotOffset := types.Int(slotNumber) * slotSize
 			idFieldOffset := slotOffset + 4
@@ -51,7 +51,7 @@ func TestRecordPageFormat(t *testing.T) {
 
 		// 512 / 26 = 19.692... = 19個スロットがあるはず.
 		// slot_number は 0 から始まる.
-		expectedSlotNumber := SlotNumber(18)
+		expectedSlotNumber := types.SlotNumber(18)
 		assert.Equal(t, expectedSlotNumber, slotNumber-1, "slot number should be 18.") // ループ終了時には1つ余分にインクリメントされているため、-1 する.
 	})
 }
@@ -71,25 +71,25 @@ func TestRecordPageFindUsedSlotAfter(t *testing.T) {
 	recordPage.Format()
 
 	t.Run("全て空きスロットの場合、常にスロット番号が NULL を返す.", func(t *testing.T) {
-		for slotNumber := SlotNumber(-1); slotNumber <= 18; slotNumber++ {
+		for slotNumber := types.SlotNumber(-1); slotNumber <= 18; slotNumber++ {
 			result := recordPage.FindUsedSlotAfter(slotNumber)
 			assert.Equalf(t, NULL_SLOT_NUMBER, result, "どのスロットも空いているため、スロット番号は NULL_SLOT_NUMBER である.(slot_number=%d)\n", slotNumber)
 		}
 	})
 
 	// いくつかのスロットを使用する.
-	recordPage.setSlotFlag(SlotNumber(0), SLOT_INUSE)
-	recordPage.setSlotFlag(SlotNumber(2), SLOT_INUSE)
+	recordPage.setSlotFlag(types.SlotNumber(0), SLOT_INUSE)
+	recordPage.setSlotFlag(types.SlotNumber(2), SLOT_INUSE)
 
 	t.Run("使用されているスロット番号を正しく返すこと.", func(t *testing.T) {
-		result1 := recordPage.FindUsedSlotAfter(SlotNumber(-1))
-		result2 := recordPage.FindUsedSlotAfter(SlotNumber(0))
-		result3 := recordPage.FindUsedSlotAfter(SlotNumber(1))
-		result4 := recordPage.FindUsedSlotAfter(SlotNumber(2))
+		result1 := recordPage.FindUsedSlotAfter(types.SlotNumber(-1))
+		result2 := recordPage.FindUsedSlotAfter(types.SlotNumber(0))
+		result3 := recordPage.FindUsedSlotAfter(types.SlotNumber(1))
+		result4 := recordPage.FindUsedSlotAfter(types.SlotNumber(2))
 
-		assert.Equal(t, SlotNumber(0), result1, "スロット番号-1から探索した場合、次の使用されているスロット番号は 0 である.")
-		assert.Equal(t, SlotNumber(2), result2, "スロット番号0から探索した場合、次の使用されているスロット番号は 2 である.")
-		assert.Equal(t, SlotNumber(2), result3, "スロット番号1から探索した場合、次の使用されているスロット番号は 2 である.")
+		assert.Equal(t, types.SlotNumber(0), result1, "スロット番号-1から探索した場合、次の使用されているスロット番号は 0 である.")
+		assert.Equal(t, types.SlotNumber(2), result2, "スロット番号0から探索した場合、次の使用されているスロット番号は 2 である.")
+		assert.Equal(t, types.SlotNumber(2), result3, "スロット番号1から探索した場合、次の使用されているスロット番号は 2 である.")
 		assert.Equal(t, NULL_SLOT_NUMBER, result4, "スロット番号2から探索した場合、次の使用されているスロット番号は存在しない.")
 	})
 }
@@ -109,7 +109,7 @@ func TestRecordPageFindEmptySlotAfter(t *testing.T) {
 	recordPage.Format()
 
 	t.Run("全て空きスロットの場合、常に次のスロット番号が返る. ただし、最後のスロットから探索した場合はNULLになる.", func(t *testing.T) {
-		for slotNumber := SlotNumber(-1); slotNumber <= 18; slotNumber++ {
+		for slotNumber := types.SlotNumber(-1); slotNumber <= 18; slotNumber++ {
 			result := recordPage.FindEmptySlotAfter(slotNumber)
 
 			if slotNumber < 18 {
@@ -124,11 +124,11 @@ func TestRecordPageFindEmptySlotAfter(t *testing.T) {
 	recordPage.Format()
 
 	t.Run("空いているスロット番号を見つけた後に再度探索した際、既に使われているので次のスロット番号が返されること.", func(t *testing.T) {
-		result1 := recordPage.FindEmptySlotAfter(SlotNumber(-1))
-		result2 := recordPage.FindEmptySlotAfter(SlotNumber(-1))
+		result1 := recordPage.FindEmptySlotAfter(types.SlotNumber(-1))
+		result2 := recordPage.FindEmptySlotAfter(types.SlotNumber(-1))
 
-		assert.Equal(t, SlotNumber(0), result1, "スロット番号-1から探索した場合、次の空いているスロット番号は 0 である.")
-		assert.Equal(t, SlotNumber(1), result2, "スロット番号-1から探索した場合、次の空いているスロット番号は 1 である(0は先に使用された).")
+		assert.Equal(t, types.SlotNumber(0), result1, "スロット番号-1から探索した場合、次の空いているスロット番号は 0 である.")
+		assert.Equal(t, types.SlotNumber(1), result2, "スロット番号-1から探索した場合、次の空いているスロット番号は 1 である(0は先に使用された).")
 	})
 }
 
@@ -147,15 +147,15 @@ func TestRecordPageDelete(t *testing.T) {
 	recordPage.Format()
 
 	t.Run("Delete実行後のスロットが FindUsedSlotAfter で返されないこと.", func(t *testing.T) {
-		slotNumber := recordPage.FindEmptySlotAfter(SlotNumber(3))
-		assert.Equal(t, SlotNumber(4), slotNumber, "スロット番号4は空いている.")
+		slotNumber := recordPage.FindEmptySlotAfter(types.SlotNumber(3))
+		assert.Equal(t, types.SlotNumber(4), slotNumber, "スロット番号4は空いている.")
 
-		usedSlotNumber := recordPage.FindUsedSlotAfter(SlotNumber(-1))
-		assert.Equal(t, SlotNumber(4), usedSlotNumber, "スロット番号4は使用されている.")
+		usedSlotNumber := recordPage.FindUsedSlotAfter(types.SlotNumber(-1))
+		assert.Equal(t, types.SlotNumber(4), usedSlotNumber, "スロット番号4は使用されている.")
 
-		recordPage.Delete(SlotNumber(4))
+		recordPage.Delete(types.SlotNumber(4))
 
-		usedSlotNumber = recordPage.FindUsedSlotAfter(SlotNumber(-1))
+		usedSlotNumber = recordPage.FindUsedSlotAfter(types.SlotNumber(-1))
 		assert.Equal(t, NULL_SLOT_NUMBER, usedSlotNumber, "スロット番号4は使用されていない.")
 	})
 }

@@ -3,6 +3,9 @@ package types
 // DB テーブル名
 type TableName string
 
+// スロット番号. 0 から始まる.
+type SlotNumber Int
+
 // DB スロットサイズ
 // スロットの先頭4バイトには、Empty or InUse のフラグが入るので、
 // スロットサイズは、レコードサイズに４バイトを加えたものになる.

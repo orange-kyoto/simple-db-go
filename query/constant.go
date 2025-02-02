@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"hash/fnv"
 	"simple-db-go/record"
 	"simple-db-go/types"
 )
@@ -26,6 +27,7 @@ func (ic IntConstant) Constant()        {}
 func (ic IntConstant) ToString() string { return ic.value.ToString() }
 func (ic IntConstant) GetValue() any    { return ic.value }
 func (ic IntConstant) GetRawValue() any { return int(ic.value) }
+func (ic IntConstant) HashCode() uint32 { return uint32(ic.value) }
 
 // For Expression interface
 func (ic IntConstant) Evaluate(scan Scan) (Constant, error) { return ic, nil }
@@ -40,6 +42,11 @@ func (sc StrConstant) Constant()        {}
 func (sc StrConstant) ToString() string { return fmt.Sprintf("'%s'", sc.value) }
 func (sc StrConstant) GetValue() any    { return sc.value }
 func (sc StrConstant) GetRawValue() any { return sc.value }
+func (sc StrConstant) HashCode() uint32 {
+	hasher := fnv.New32a()
+	hasher.Write([]byte(sc.value))
+	return hasher.Sum32()
+}
 
 // For Expression interface
 func (sc StrConstant) Evaluate(scan Scan) (Constant, error) { return sc, nil }
