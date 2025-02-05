@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"simple-db-go/constants"
+	"simple-db-go/indexing"
 	"simple-db-go/record"
 	"simple-db-go/transaction"
 	"simple-db-go/types"
@@ -43,9 +44,11 @@ func NewIndexInfo(
 
 // インデックスを捜索するのに必要なブロックアクセス数.
 // 検索のためのコストを計算するためのメソッド.
+// NOTE: HashIndex のコストを計算している（BTree に変えることもできる）
 func (ii *IndexInfo) GetBlocksAccessed() types.Int {
-	// TODO: HashIndex が実装されたら、そのコストを計算する. Chapter12.
-	return -1
+	recordsPerBlock := ii.transaction.BlockSize() / types.Int(ii.indexLayout.GetSlotSize())
+	numBlocks := ii.statInfo.GetRecordsOutput() / recordsPerBlock
+	return indexing.HashIndexSearchCost(numBlocks, recordsPerBlock)
 }
 
 // インデックスに存在するレコードの数.
@@ -66,10 +69,9 @@ func (ii *IndexInfo) GetDistinctValues(fieldName types.FieldName) types.Int {
 	}
 }
 
-// TODO: Chapter12 で実装する.
-// Index struct を返すメソッドのようだ。
-// TODO なので、Index struct は定義していない.
-func (ii *IndexInfo) Open() {}
+func (ii *IndexInfo) Open() indexing.Index {
+	return indexing.NewHashIndex(ii.transaction, ii.indexName, ii.indexLayout)
+}
 
 // インデックスのレイアウトを計算する.
 func (ii *IndexInfo) createIndexLayout() (*record.Layout, error) {
@@ -83,13 +85,13 @@ func (ii *IndexInfo) createIndexLayout() (*record.Layout, error) {
 	}
 
 	if fieldType == constants.INTEGER {
-		indexSchema.AddIntField("data_val")
+		indexSchema.AddIntField("dataval")
 	} else {
 		fieldLength, err := ii.tableSchema.Length(ii.fieldName)
 		if err != nil {
 			return nil, err
 		}
-		indexSchema.AddStringField("data_val", fieldLength)
+		indexSchema.AddStringField("dataval", fieldLength)
 	}
 	return record.NewLayout(indexSchema), nil
 }

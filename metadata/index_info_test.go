@@ -32,7 +32,7 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 			// フィールドの有無.
 			assert.True(t, actualIndexSchema.HasField("block"), "インデックスのスキーマは block フィールドを持っているべき.")
 			assert.True(t, actualIndexSchema.HasField("id"), "インデックスのスキーマは id フィールドを持っているべき.")
-			assert.True(t, actualIndexSchema.HasField("data_val"), "インデックスのスキーマは data_val フィールドを持っているべき.")
+			assert.True(t, actualIndexSchema.HasField("dataval"), "インデックスのスキーマは dataval フィールドを持っているべき.")
 			assert.Len(t, actualIndexSchema.Fields(), 3, "インデックスのスキーマは 3 つのフィールドを持っているべき.")
 
 			// フィールドの型.
@@ -46,9 +46,9 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 				assert.Equal(t, constants.INTEGER, idFieldType, "id フィールドは INTEGER 型であるべき.")
 			}
 
-			dataValFieldType, err := actualIndexSchema.FieldType("data_val")
+			dataValFieldType, err := actualIndexSchema.FieldType("dataval")
 			if assert.NoError(t, err) {
-				assert.Equal(t, constants.INTEGER, dataValFieldType, "data_val フィールドは INTEGER 型であるべき.")
+				assert.Equal(t, constants.INTEGER, dataValFieldType, "dataval フィールドは INTEGER 型であるべき.")
 			}
 		})
 
@@ -62,12 +62,12 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 			actualSlotSize := actualIndexLayout.GetSlotSize()
 			actualBlockFieldOffset, _ := actualIndexLayout.GetOffset("block")
 			actualIdFieldOffset, _ := actualIndexLayout.GetOffset("id")
-			actualDataValFieldOffset, _ := actualIndexLayout.GetOffset("data_val")
+			actualDataValFieldOffset, _ := actualIndexLayout.GetOffset("dataval")
 
 			assert.Equal(t, expectedSlotSize, actualSlotSize, "インデックスのスロットサイズは 16 bytes であるべき.")
 			assert.Equal(t, expectedBlockFieldOffset, actualBlockFieldOffset, "block フィールドのオフセットは 4 bytes であるべき.")
 			assert.Equal(t, expectedIdFieldOffset, actualIdFieldOffset, "id フィールドのオフセットは 8 bytes であるべき.")
-			assert.Equal(t, expectedDataValFieldOffset, actualDataValFieldOffset, "data_val フィールドのオフセットは 12 bytes であるべき.")
+			assert.Equal(t, expectedDataValFieldOffset, actualDataValFieldOffset, "dataval フィールドのオフセットは 12 bytes であるべき.")
 		})
 	})
 
@@ -82,7 +82,7 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 			// フィールドの有無.
 			assert.True(t, actualIndexSchema.HasField("block"), "インデックスのスキーマは block フィールドを持っているべき.")
 			assert.True(t, actualIndexSchema.HasField("id"), "インデックスのスキーマは id フィールドを持っているべき.")
-			assert.True(t, actualIndexSchema.HasField("data_val"), "インデックスのスキーマは data_val フィールドを持っているべき.")
+			assert.True(t, actualIndexSchema.HasField("dataval"), "インデックスのスキーマは dataval フィールドを持っているべき.")
 			assert.Len(t, actualIndexSchema.Fields(), 3, "インデックスのスキーマは 3 つのフィールドを持っているべき.")
 
 			// フィールドの型.
@@ -96,14 +96,14 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 				assert.Equal(t, constants.INTEGER, idFieldType, "id フィールドは INTEGER 型であるべき.")
 			}
 
-			dataValFieldType, err := actualIndexSchema.FieldType("data_val")
+			dataValFieldType, err := actualIndexSchema.FieldType("dataval")
 			if assert.NoError(t, err) {
-				assert.Equal(t, constants.VARCHAR, dataValFieldType, "data_val フィールドは VARCHAR 型であるべき.")
+				assert.Equal(t, constants.VARCHAR, dataValFieldType, "dataval フィールドは VARCHAR 型であるべき.")
 			}
 		})
 
 		t.Run("インデックスのレイアウトが期待した構造になっていること.", func(t *testing.T) {
-			// flag: 4bytes, block field: 4bytes, id field: 4bytes, data_val field: (4+10)bytes, 合計 26 bytes
+			// flag: 4bytes, block field: 4bytes, id field: 4bytes, dataval field: (4+10)bytes, 合計 26 bytes
 			expectedSlotSize := types.SlotSize(26)
 			expectedBlockFieldOffset := types.FieldOffsetInSlot(4)
 			expectedIdFieldOffset := types.FieldOffsetInSlot(8)
@@ -112,12 +112,12 @@ func TestIndexInfoNewInedxInfo(t *testing.T) {
 			actualSlotSize := actualIndexLayout.GetSlotSize()
 			actualBlockFieldOffset, _ := actualIndexLayout.GetOffset("block")
 			actualIdFieldOffset, _ := actualIndexLayout.GetOffset("id")
-			actualDataValFieldOffset, _ := actualIndexLayout.GetOffset("data_val")
+			actualDataValFieldOffset, _ := actualIndexLayout.GetOffset("dataval")
 
 			assert.Equal(t, expectedSlotSize, actualSlotSize, "インデックスのスロットサイズは 16 bytes であるべき.")
 			assert.Equal(t, expectedBlockFieldOffset, actualBlockFieldOffset, "block フィールドのオフセットは 4 bytes であるべき.")
 			assert.Equal(t, expectedIdFieldOffset, actualIdFieldOffset, "id フィールドのオフセットは 8 bytes であるべき.")
-			assert.Equal(t, expectedDataValFieldOffset, actualDataValFieldOffset, "data_val フィールドのオフセットは 12 bytes であるべき.")
+			assert.Equal(t, expectedDataValFieldOffset, actualDataValFieldOffset, "dataval フィールドのオフセットは 12 bytes であるべき.")
 		})
 	})
 }

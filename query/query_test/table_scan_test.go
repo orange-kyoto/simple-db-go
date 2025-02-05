@@ -106,20 +106,20 @@ func TestTableScanMoveToRecordID(t *testing.T) {
 	tableScan := query.NewTableScan(transaction, tableName, layout)
 
 	t.Run("指定した record id に移動できる.", func(t *testing.T) {
-		recordID1 := record.NewRecordID(types.BlockNumber(1), record.SlotNumber(2))
+		recordID1 := record.NewRecordID(types.BlockNumber(1), types.SlotNumber(2))
 		tableScan.MoveToRecordID(recordID1)
 
 		assert.Equal(t, recordID1, tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 
-		recordID2 := record.NewRecordID(types.BlockNumber(2), record.SlotNumber(5))
+		recordID2 := record.NewRecordID(types.BlockNumber(2), types.SlotNumber(5))
 		tableScan.MoveToRecordID(recordID2)
 
 		assert.Equal(t, recordID2, tableScan.GetCurrentRecordID(), "current record id は recordID2 であるべし.")
 	})
 
 	t.Run("ブロックを移動して値の読み書きができる.", func(t *testing.T) {
-		recordID1 := record.NewRecordID(types.BlockNumber(1), record.SlotNumber(2))
-		recordID2 := record.NewRecordID(types.BlockNumber(2), record.SlotNumber(5))
+		recordID1 := record.NewRecordID(types.BlockNumber(1), types.SlotNumber(2))
+		recordID2 := record.NewRecordID(types.BlockNumber(2), types.SlotNumber(5))
 
 		tableScan.MoveToRecordID(recordID1)
 
@@ -181,9 +181,9 @@ func TestTableScanBeforeFirst(t *testing.T) {
 	transaction.Append(fileName)
 
 	t.Run("先頭レコードの直前に移動できる.", func(t *testing.T) {
-		tableScan.MoveToRecordID(record.NewRecordID(types.BlockNumber(1), record.SlotNumber(3)))
+		tableScan.MoveToRecordID(record.NewRecordID(types.BlockNumber(1), types.SlotNumber(3)))
 		tableScan.BeforeFirst()
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(-1)), tableScan.GetCurrentRecordID(), "先頭レコードの直前に移動している")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(-1)), tableScan.GetCurrentRecordID(), "先頭レコードの直前に移動している")
 	})
 }
 
@@ -201,29 +201,29 @@ func TestTableScanInsert(t *testing.T) {
 
 	t.Run("最初の Insert 呼び出し時は先頭ブロックの先頭スロットが空いているので、先頭レコードへの書き込みができる状態になる.", func(t *testing.T) {
 		tableScan.Insert()
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID0 であるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID0 であるべし.")
 	})
 
 	t.Run("2回目の Insert 呼び出し後も、まだブロックの移動は行われず、スロット番号のみがインクリメントされる.", func(t *testing.T) {
 		tableScan.Insert()
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(1)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(1)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 	})
 
 	t.Run("スロットは19個存在するため、Insert 呼び出しの3回目〜19回目の呼び出しまでは、ブロック番号は変わらず、スロット番号だけがインクリメントされる.", func(t *testing.T) {
 		for i := types.Int(2); i < 19; i++ {
 			tableScan.Insert()
-			assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(i)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
+			assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(i)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 		}
 	})
 
 	t.Run("次の Insert 呼び出し時にはブロックの移動が行われるため、ブロック番号がインクリメントされ、スロット番号は最初の番号になる.", func(t *testing.T) {
 		tableScan.Insert()
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(1), record.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(1), types.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 		assert.Equal(t, types.Int(2), transaction.Size(fileName), "既存ブロックへの移動なので、ファイルのブロックサイズは変わっていない.")
 	})
 
 	t.Run("もう一度18回 Insert を実行しても、ブロック番号は変わらない.", func(t *testing.T) {
-		for i := record.SlotNumber(1); i < 19; i++ {
+		for i := types.SlotNumber(1); i < 19; i++ {
 			tableScan.Insert()
 			assert.Equal(t, record.NewRecordID(types.BlockNumber(1), i), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 		}
@@ -231,7 +231,7 @@ func TestTableScanInsert(t *testing.T) {
 
 	t.Run("次の Insert 呼び出し時には、ファイルにブロックが1つ追加される.", func(t *testing.T) {
 		tableScan.Insert()
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(2), record.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(2), types.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID1 であるべし.")
 		assert.Equal(t, types.Int(3), transaction.Size(fileName), "新しいブロックが追加されたので、ファイルのブロックサイズは3.")
 	})
 }
@@ -256,7 +256,7 @@ func TestTableScanDelete(t *testing.T) {
 		tableScan.BeforeFirst()
 		tableScan.Insert()
 
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID0 であるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は recordID0 であるべし.")
 	})
 }
 
@@ -276,12 +276,12 @@ func TestTableScanNext(t *testing.T) {
 	tableScan.Insert()
 	tableScan.Insert()
 	tableScan.Insert()
-	secondRecordID := record.NewRecordID(types.BlockNumber(0), record.SlotNumber(1))
+	secondRecordID := record.NewRecordID(types.BlockNumber(0), types.SlotNumber(1))
 	tableScan.MoveToRecordID(secondRecordID)
-	tableScan.Delete()                                                                       // 先頭ブロックの2つ目のレコードを Empty にもどす.
-	tableScan.MoveToRecordID(record.NewRecordID(types.BlockNumber(1), record.SlotNumber(3))) // Insert は後ろのレコードを見るので、4つ目のレコードにセットしておく.
+	tableScan.Delete()                                                                      // 先頭ブロックの2つ目のレコードを Empty にもどす.
+	tableScan.MoveToRecordID(record.NewRecordID(types.BlockNumber(1), types.SlotNumber(3))) // Insert は後ろのレコードを見るので、4つ目のレコードにセットしておく.
 	tableScan.Insert()
-	assert.Equal(t, record.NewRecordID(types.BlockNumber(1), record.SlotNumber(4)), tableScan.GetCurrentRecordID(), "current record id は 2つ目のブロックの5つ目のレコードであるべし.")
+	assert.Equal(t, record.NewRecordID(types.BlockNumber(1), types.SlotNumber(4)), tableScan.GetCurrentRecordID(), "current record id は 2つ目のブロックの5つ目のレコードであるべし.")
 
 	// 最初の位置に戻しておく.
 	tableScan.BeforeFirst()
@@ -289,15 +289,15 @@ func TestTableScanNext(t *testing.T) {
 	t.Run("Next で次のレコードに移動できる.", func(t *testing.T) {
 		hasNext := tableScan.Next()
 		assert.True(t, hasNext, "次のレコードがあるので true が返る.")
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は 1つ目のレコードであるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(0)), tableScan.GetCurrentRecordID(), "current record id は 1つ目のレコードであるべし.")
 
 		hasNext = tableScan.Next()
 		assert.True(t, hasNext, "次のレコードがあるので true が返る.")
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), record.SlotNumber(2)), tableScan.GetCurrentRecordID(), "current record id は 3つ目のレコードであるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(0), types.SlotNumber(2)), tableScan.GetCurrentRecordID(), "current record id は 3つ目のレコードであるべし.")
 
 		hasNext = tableScan.Next()
 		assert.True(t, hasNext, "次のレコードがあるので true が返る.")
-		assert.Equal(t, record.NewRecordID(types.BlockNumber(1), record.SlotNumber(4)), tableScan.GetCurrentRecordID(), "current record id は 第２ブロックの5つ目のレコードであるべし.")
+		assert.Equal(t, record.NewRecordID(types.BlockNumber(1), types.SlotNumber(4)), tableScan.GetCurrentRecordID(), "current record id は 第２ブロックの5つ目のレコードであるべし.")
 	})
 
 	t.Run("Next で最後のレコードを超えると false が返る.", func(t *testing.T) {

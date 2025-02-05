@@ -29,6 +29,10 @@ func NewHashIndex(transaction *transaction.Transaction, indexName types.IndexNam
 	}
 }
 
+func HashIndexSearchCost(numBlocks types.Int, recordsPerBlock types.Int) types.Int {
+	return numBlocks / bucketSize
+}
+
 func (hi *HashIndex) BeforeFirst(searchKey query.Constant) {
 	hi.Close()
 
@@ -69,5 +73,28 @@ func (hi *HashIndex) GetDataRecordID() record.RecordID {
 	return record.NewRecordID(types.BlockNumber(blockNumber), types.SlotNumber(id))
 }
 
+func (hi *HashIndex) Insert(val query.Constant, dataRecordID record.RecordID) {
+	hi.BeforeFirst(val)
+
+	hi.tableScan.Insert()
+	hi.tableScan.SetInt("block", types.Int(dataRecordID.GetBlockNumber()))
+	hi.tableScan.SetInt("id", types.Int(dataRecordID.GetSlotNumber()))
+	hi.tableScan.SetValue("dataval", val)
+}
+
+func (hi *HashIndex) Delete(val query.Constant, dataRecordID record.RecordID) {
+	hi.BeforeFirst(val)
+
+	for hi.Next() {
+		if hi.GetDataRecordID() == dataRecordID {
+			hi.tableScan.Delete()
+			return
+		}
+	}
+}
+
 func (hi *HashIndex) Close() {
+	if hi.tableScan != nil {
+		hi.tableScan.Close()
+	}
 }

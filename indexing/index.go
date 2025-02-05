@@ -12,9 +12,9 @@ type Index interface {
 
 	GetDataRecordID() record.RecordID
 
-	Insert(dataVal query.Constant, dataRecordID record.RecordID)
+	Insert(val query.Constant, dataRecordID record.RecordID)
 
-	Delete(dataVal query.Constant, dataRecordID record.RecordID)
+	Delete(val query.Constant, dataRecordID record.RecordID)
 
 	Close()
 }
