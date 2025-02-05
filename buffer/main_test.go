@@ -5,15 +5,14 @@ import (
 	"simple-db-go/config"
 	"simple-db-go/file"
 	"simple-db-go/log"
-	"simple-db-go/types"
 	"simple-db-go/util"
 	"testing"
 )
 
 const (
 	bufferManagerTestName = "buffer_manager_test"
-	blockSize             = types.Int(16)
-	bufferPoolSize        = types.Int(3)
+	blockSize             = 16
+	bufferPoolSize        = 3
 )
 
 func TestMain(m *testing.M) {

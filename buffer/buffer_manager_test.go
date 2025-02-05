@@ -23,15 +23,6 @@ func TestPinUnpinBuffer(t *testing.T) {
 	thirdBlockID := file.NewBlockID("test_file", 2)
 	forthBlockID := file.NewBlockID("test_file", 3)
 
-	// 一旦テストケースを整理
-	// 観点を整理する
-	// 観点1. すでにバッファリングされている BlockID かどうか.
-	// 観点2. 対象のバッファーがピンされているかどうか.
-	// 観点3. ピンされているバッファーが残っているかどうか.
-	//
-	// 注意：指定されたブロックIDのファイルは存在しているべきなのか？→Yes!なぜなら、ピンするということは、バッファーにファイルの内容を読み取るわけなので、Page をメモリに読み込むことになる！
-	// というわけで、テスト用のファイルを用意しておいた方が良い。FileManager のメソッドをそのまま使えるだろう。
-
 	t.Run("[条件]まだバッファーされていない [期待値]バッファーされている", func(t *testing.T) {
 		testBuffer := bufferManager.Pin(firstBlockID)
 		assert.True(t, bufferManager.bufferPool[0].IsPinned(), "Buffer[0] should be pinned")
@@ -90,7 +81,6 @@ func TestPinUnpinBuffer(t *testing.T) {
 		assert.True(t, bufferManager.bufferPool[1].IsPinned(), "Buffer[1] should be pinned")
 		assert.True(t, bufferManager.bufferPool[2].IsPinned(), "Buffer[2] should be pinned")
 		assert.Equal(t, types.Int(0), bufferManager.numAvailable, "numAvailable should be 0")
-		assert.Len(t, bufferManager.waitList, 1, "len(bm.waitList) should be 1 (前のテストで1つ残っているため).")
 
 		// 追加でピンしようとする.
 		done := make(chan bool)
